@@ -233,6 +233,7 @@ Item {
             height: 181
             width: 9
             source: './img/yellowneedle.png'
+            antialiasing: true
             transform:
                 Rotation {
                     id: tachneedle_rotate
@@ -258,6 +259,7 @@ Item {
             height: 181
             width: 9
             source: './img/redline.png'
+            antialiasing: true
             transform:
                 Rotation {
                     id: redline_tachneedle_rotate
@@ -338,6 +340,8 @@ Item {
                     angle: 90
                 }
         }
+
+        // This is doubled because we ALWAYS want to have a _solid_ value here, Opacity trigger gets messy
         Text {
             id: watertemp_display_val
             text: root.watertemp.toFixed(0)
@@ -349,12 +353,49 @@ Item {
             x: 668
             y: 110
             z: 3
+            
             color: if (root.watertemp < root.waterlow)
                         root.engine_warmup_color
                     else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
                     if(!root.sidelight) root.primary_color; else root.night_light_color
                 else
                     root.warning_red
+            visible: if(root.watertemp < root.waterhigh) true; else false
+        }
+        Text {
+            id: watertemp_display_val_blink
+            text: root.watertemp.toFixed(0)
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            height: 38
+            x: 668
+            y: 110
+            z: 3
+            opacity: water_temp_animate.running ? 0 : 1
+            color: if (root.watertemp < root.waterlow)
+                        root.engine_warmup_color
+                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
+                    if(!root.sidelight) root.primary_color; else root.night_light_color
+                else
+                    root.warning_red
+            Timer{
+                id: water_temp_animate
+                running: if (root.watertemp > root.waterhigh)
+                            true
+                        else
+                            false
+                interval: 500
+                repeat: true
+                onTriggered: if(parent.opacity === 0){
+                    parent.opacity = 1
+                }
+                else{
+                    parent.opacity = 0
+                } 
+            }
+            visible: if(root.watertemp < root.waterhigh) false; else true
         }
          Text {
             id: watertemp_label
@@ -387,17 +428,48 @@ Item {
             x: 668
             y: 186
             z: 3
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            visible: if(root.oiltemphigh === 0 && root.oiltemp < root.oiltemphigh)false; else true
+            opacity: oil_temp_animate.running ? 0 : 1
+            
+        }
+        Text {
+            id: oiltemp_display_val_blink
+            text: root.oiltemp.toFixed(0)
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            height: 38
+            x: 668
+            y: 186
+            z: 3
             color: if (root.oiltemp < root.oiltemphigh)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            // visible: if(root.oiltemphigh === 0)false; else true
-
+            visible: if(root.oiltemphigh === 0)false; else true
+            opacity: oil_temp_animate.running ? 0 : 1
+            Timer{
+                id: oil_temp_animate
+                running: if (root.oiltemp > root.oiltemphigh)
+                            true
+                        else
+                            false
+                interval: 500
+                repeat: true
+                onTriggered: if(parent.opacity === 0){
+                    parent.opacity = 1
+                }
+                else{
+                    parent.opacity = 0
+                }
+            }
         }
          Text {
             id: oiltemp_label
             x: 778
-            y: 196
+            y: 194
             z: 4
             color: if (root.oiltemp < root.oiltemphigh)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
@@ -410,7 +482,7 @@ Item {
             transform: Rotation{
                 angle: 90
             }
-            // visible: if(root.oiltemphigh === 0)false; else true
+            visible: if(root.oiltemphigh === 0)false; else true
 
         }
          Text {
@@ -424,11 +496,64 @@ Item {
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure < root.oilpressurelow)
+            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            // visible: if(root.oilpressurehigh === 0)false; else true
+            visible: if(root.oilpressurehigh === 0 || root.oilpressure.toFixed(0) < root.oilpressurelow)false; else true
+            }
+        Text {
+            id: oilpressure_display_val_blink
+            width: 86
+            height: 38
+            x: 668
+            y: 262
+            z: 3
+            text: root.oilpressure.toFixed(0) 
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
+                        root.warning_red
+                    else
+                        if(!root.sidelight) root.primary_color; else root.night_light_color
+            visible: if(root.oilpressurehigh !== 0 && root.oilpressure.toFixed(0) < root.oilpressurelow)true; else false
+            opacity: oil_pressure_animate.running ? 0 : 1
+            Timer{
+                id: oil_pressure_animate
+                running: if(root.oilpressure.toFixed(0) <= root.oilpressurelow)
+                            true
+                        else
+                            false
+                interval: 500
+                repeat: true
+                onTriggered: if(parent.opacity === 0){
+                    parent.opacity = 1
+                }
+                else{
+                    parent.opacity = 0
+                } 
+            }
+        }
+
+        Text {
+            id: oilpressure_label
+            x: 778
+            y: 260
+            z: 4
+            color: if (root.oilpressure.toFixed(0) > root.oilpressurelow)
+                   if(!root.sidelight) root.primary_color; else root.night_light_color
+               else
+                   root.warning_red
+            text: "OIL PRS"
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+            visible: if(root.oilpressurehigh === 0)false; else true
+
         }
         Text {
             id: fuel_display_val
@@ -441,20 +566,49 @@ Item {
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure < root.oilpressurelow)
-                        root.warning_red
-                    else
-                        if(!root.sidelight) root.primary_color; else root.night_light_color
+            opacity: gas_animate.running ? 0 : 1
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            Timer{
+                id: gas_animate
+                running: if(root.fuel <= root.fuellow)
+                            true
+                        else
+                            false
+                interval: 500
+                repeat: true
+                onTriggered: if(parent.opacity === 0){
+                    parent.opacity = 1
+                }
+                else{
+                    parent.opacity = 0
+                } 
+            }
         }
         Text {
+            id: fuel_level_label
+            x: 778
+            y: 336
+            z: 4
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: "FUEL %"
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+        }
+
+
+        Text {
             id: odometer_display_val
-            // text: if (root.speedunits === 0)
-            //         root.odometer/.62
-            //         else if(root.speedunits === 1)
-            //         root.odometer
-            //         else
-            //         root.odometer
-            text: "123456"
+            text: if (root.speedunits === 0)
+                    root.odometer/.62
+                    else if(root.speedunits === 1)
+                    root.odometer
+                    else
+                    root.odometer
+            // text: "123456"
             font.pixelSize: 24
             horizontalAlignment: Text.AlignRight
             font.pointSize: 24
@@ -465,113 +619,148 @@ Item {
             width: 86
             color: if(!root.sidelight) root.primary_color; else root.night_light_color
         }
+        Text {
+            id: odometer_label
+            x: 778
+            y: 420
+            z: 4
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: if (root.speedunits === 0)
+                    "Km"
+                    else if(root.speedunits === 1)
+                    "Mi"
+                    else
+                    ""
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+        }
     }
 
-    
+    Item{
+        id: left_side_column
+        Image{
+            id: left_column_bkg
+            x: 16
+            y: 17
+            z: 2
+            height: 448
+            width: 139
+            source: "./img/left_column.png"
+        }
+        Item{
+            id: shift_lights
+        }
+        Item{
+            id: dummy_lights
+            z:3
+            Image {
+                id: left_blinker
+                x: 27
+                y: 248
+                source: "./img/left_blinker.png"
+                visible: root.leftindicator
+            }
+            Image {
+                id: right_blinker
+                x: 90
+                y: 248
+                source: "./img/right_blinker.png"
+                visible: root.rightindicator
+            }
+            Image {
+                id: door_ajar_lamp
+                x: 27
+                y: 282
+                source: "./img/door_light.png"
+                visible: root.doorswitch
+            }
+            Image {
+                id: ebrake_image
+                x: 90
+                y: 282
+                source: "./img/ebrake_light.png"
+                visible: root.brake|root.handbrake //This is the way it is set in main.qml so trying this to see if it shows.
+            }
+            Image {
+                id: seatbelt_warning_lamp
+                x: 27
+                y: 316
+                source: "./img/seatbelt_light.png"
+                visible: root.seatbelt
+            }
+            Image {
+                id: abs_image
+                x: 90
+                y: 316
+                source: "./img/abs_light.png"
+                visible: root.abs
+            } 
+            Image {
+                id: battery_image
+                x: 27
+                y: 350
+                source: "./img/battery_light.png"
+                visible: root.battery
+            }
+            Image {
+                id: oil_pressure_lamp
+                x: 27
+                y: 384
+                source: "img/oil_light.png"
+                visible: root.oil
+            }
+            Image {
+                id: cel_image
+                x: 90
+                y: 384
+                source: "./img/cel_light.png"
+                visible: root.mil
+            }
+            Image {
+                id: brights_image
+                x: 27
+                y: 418
+                source: "./img/brights_light.png"
+                visible: root.mainbeam
+            }
+            Image {
+                id: srs_light
+                x: 90
+                y: 418
+                source: "./img/srs_light.png"
+                visible: root.airbag
+            }
+
+            // Image {
+            //     id: tcs_image
+            //     x: 531
+            //     y: 295
+            //     width: 43
+            //     height: 32
+            //     source: "./img/tcs_light.png"
+            //     visible: root.tc
+            // }
+            
+
+            
+            
+            
+            
+        }
+    }
 
     
 
     Item {
         id: icons
-        Image {
-            id: brights
-            x: 378
-            y: 296
-            height: 29
-            width: 46
-            source: "./img/brights_light.png"
-            visible: root.mainbeam
-        }
-
-        Image {
-            id: left_blinker
-            x: 341
-            y: 295
-            source: "./img/left_blinker.png"
-            visible: root.leftindicator
-        }
-        Image {
-            id: right_blinker
-            x: 432
-            y: 295
-            source: "./img/right_blinker.png"
-            visible: root.rightindicator
-        }
-        Image {
-            id: battery_image
-            x: 731
-            y: 293
-            width: 47
-            height: 32
-            source: "./img/battery_light.png"
-            //autoTransform: false
-            visible: root.battery
-        }
-        Image {
-            id: cel_image
-            x: 671
-            y: 293
-            width: 52
-            source: "./img/cel_light.png"
-            antialiasing: true
-            height: 32
-            visible: root.mil
-        }
-
-        Image {
-            id: ebrake_image
-            x: 569
-            y: 295
-            width: 96
-            height: 32
-            source: "./img/ebrake_light.png"
-            visible: root.brake|root.handbrake //This is the way it is set in main.qml so trying this to see if it shows.
-        }
-        // Image {
-        //     id: tcs_image
-        //     x: 531
-        //     y: 295
-        //     width: 43
-        //     height: 32
-        //     source: "./img/tcs_light.png"
-        //     visible: root.tc
-        // }
-        Image {
-            id: oil_pressure_lamp
-            x: 467
-            source: "img/oil_light.png"
-            y: 298
-            width: 61
-            height: 23
-            visible: root.oil
-        }
-
-        Image {
-            id: abs_image
-            x: 333
-            y: 349
-            source: "./img/abs_light.png"
-            sourceSize.width: 42
-            sourceSize.height: 32
-            visible: root.abs
-        }
-        Image {
-            id: seatbelt_warning_lamp
-            x: 390
-            y: 349
-            source: "./img/seatbelt_light.png"
-            visible: root.seatbelt
-        }
-        Image {
-            id: door_ajar_lamp
-            x: 433
-            y: 349
-            source: "./img/door_light.png"
-            visible: root.doorswitch
-        }
+        
         
     }
-} //End Init Item
+} //End Type98T Dash
 
 /*##^##
 Designer {
