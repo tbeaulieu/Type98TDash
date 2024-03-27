@@ -174,7 +174,7 @@ Item {
 
     //Tristan Generated Code Here:
     property string white_color: "#FFFFFF"
-    property string primary_color: "#FFFFFF"; //#FFBF00 for amber
+    property string primary_color: "#000000"; //#FFBF00 for amber
     property string night_light_color: "#BFFFAC"  //LCD Green
     property string sweetspot_color: "#FFA500" //Cam Changeover Rev colpr
     property string warning_red: "#FF0000" //Redline/Warning colors
@@ -185,8 +185,12 @@ Item {
 
     //Fonts
     FontLoader {
-        id: LEDCalculator
+        id: ledCalculator
         source: "./fonts/LEDCalculator.ttf"
+    }
+    FontLoader {
+        id: bdoGrotesk
+        source: "./fonts/BDOGrotesk-VF.ttf"
     }
 
 
@@ -204,713 +208,269 @@ Item {
     }
     Image{
         id: carbon_bkg
-        y:0
         x:0
+        y:0
         z:0
         width: 800
         height: 480
         source: "./img/carbon_bkg.png"
     }
-//    Item{
-//        id: guides
-//        Rectangle{
-//            id: centerline
-//            width: 1
-//            height: 480
-//            color: "#FFFF00"
-//            x: 400
-
-//        }
-//        Rectangle{
-//            id: gasline
-//            width: 800
-//            height: 1
-//            color: "#FFFF00"
-//            x: 0
-//            y: 427
-//        }
-
-//    }
-
-    Rectangle {
-        id: rev_splitter
-        y: 256
-        x: 0
-        z: 2
-        width: 800
-        height: 2
-        color: if(!root.sidelight) root.primary_color; else root.night_light_color
+    Image{
+        id: tachometer_bkg
+        x: 166
+        y: 6
+        z: 1
+        width: 468
+        height: 468
+        source: "./img/tach_bkg.png"
     }
-
-    Text {
-        id: rpm_display_val
-        text: root.rpm + " rpm"
-        font.pixelSize: 32
-        horizontalAlignment: Text.AlignRight
-        font.pointSize: 32
-        font.family: LEDCalculator.name
-        x: 608
-        y: 203
-        z: 2
-        width: 174
-        opacity: 100
-        color: if (root.rpm < 8000)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-        Timer{
-            id: rpm_shift_blink
-            running: if(root.rpm >= 8000)
-                        true
-                    else
-                        false
-            interval: 60
-            repeat: true
-            onTriggered: if(parent.opacity === 0){
-                parent.opacity = 100
-            }
-            else{
-                parent.opacity = 0
-            } 
+    Item{
+        id: tachometer_needle
+        z: 4
+        x: 396
+        y: 60
+        Image{
+            height: 181
+            width: 9
+            source: './img/yellowneedle.png'
+            transform:
+                Rotation {
+                    id: tachneedle_rotate
+                    origin.y: 181
+                    origin.x: 4
+                    angle: Math.min(Math.max(-192, Math.round((root.rpm/1000)*24) - 192), 48)                
+                    Behavior on angle {
+                        SpringAnimation {
+                            spring: rpm_needle_spring
+                            damping:rpm_needle_damping
+                        }
+                    }
+                }
         }
     }
 
-    Text {
-        id: watertemp_display_val
-        text: root.watertemp.toFixed(
-                  0) + "°" // Alec added toFixed(0) to have no decimal places
-        font.pixelSize: 32
-        font.pointSize: 32
-        font.family: LEDCalculator.name
-        width: 128
-        height: 32
-        x: 36
-        y: 396
-        z: 2
-        color: if (root.watertemp < root.waterlow)
-                    root.engine_warmup_color
-                else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
+    Item{
+        id: redline_tachometer_needle
+        z: 4
+        x: 396
+        y: 60
+        Image{
+            height: 181
+            width: 9
+            source: './img/redline.png'
+            transform:
+                Rotation {
+                    id: redline_tachneedle_rotate
+                    origin.y: 181
+                    origin.x: 4
+                    angle: Math.min(Math.max(-192, Math.round((root.rpmlimit/1000)*24) - 192), 48)                
+                    Behavior on angle {
+                        SpringAnimation {
+                            spring: rpm_needle_spring
+                            damping:rpm_needle_damping
+                        }
+                    }
+                }
+        }
+    }
+    Image{
+        id: tach_center
+        x: 339.5
+        y: 179
+        z: 5
+        width: 121
+        height: 127
+        source: "./img/rev_center.png"
     }
 
-    Text {
-        id: oiltemp_display_val
-        font.pixelSize: 32
-        font.pointSize: 32
-        font.family: LEDCalculator.name
-        width: 128
-        height: 32
-        x: 36
-        y: 338
-        z: 2
-        color: if (root.oiltemp < root.oiltemphigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-        text: root.oiltemp.toFixed(0) + "°" // "100°"
-        visible: if(root.oiltemphigh === 0)false; else true
-    }
-
-    Text {
-        id: oilpressure_display_val
-        text: root.oilpressure.toFixed(0) //Alec added toFixed(0)
-        font.pixelSize: 32
-        font.pointSize: 32
-        font.family: LEDCalculator.name
-        width: 128
-        height: 32
-        x: 36
-        y: 284
-        z: 2
-        color: if (root.oilpressure < root.oilpressurelow)
-                    root.warning_red
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-        visible: if(root.oilpressurehigh === 0)false; else true
-    }
-    Rectangle {
-        id: oilpressure_line
-        x: 16
-        y: 327
-        width: 256
-        height: 2
-        color: if(!root.sidelight) root.primary_color; else root.night_light_color
-        visible: if(root.oilpressurehigh === 0)false; else true
-
-    }
-
-    Text {
+    //Right Side Unit
+    Item{
+        id: right_side_information
+        Image{
+            id: lcd_background
+            x: 645
+            y: 16
+            z: 2
+            height: 448
+            width: 139
+            source: if(!root.sidelight)"./img/unlit_right_column.png";else "./img/lit_right_column.png"
+        }
+        Text {
         id: speed_display_val
-        font.pixelSize: 56
+        font.pixelSize: 48
         horizontalAlignment: Text.AlignRight
-        font.family: LEDCalculator.name
-        font.pointSize: 56
-        x: 553
-        y: 358
-        width: 148
+        font.family: ledCalculator.name
+        font.pointSize: 48
+        x: 668
+        y: 36
+        z: 3
+        width: 86
         color: if(!root.sidelight) root.primary_color; else root.night_light_color
         text: if (root.speedunits === 0){
-                    root.speed.toFixed(0) //"0"   // Alec added speed
+                    root.speed.toFixed(0) 
                 }
                 else{
                     root.mph.toFixed(0)
                 }
-
-        z: 2
-    }
-
-    Text {
-        id: odometer_display_val
-        text: if (root.speedunits === 0)
-                root.odometer/.62 + " km"
-                else if(root.speedunits === 1)
-                root.odometer + " mi"
-                else
-                root.odometer
-        font.pixelSize: 28
-        horizontalAlignment: Text.AlignRight
-        font.pointSize: 28
-        font.family: LEDCalculator.name
-        x: 618
-        y: 440 //480 - 16 - 12
-        z: 2
-        width: 164
-        color: if(!root.sidelight) root.primary_color; else root.night_light_color
-    }
-
-    Text {
-        id: speed_label
-        x: 707
-        y: 396
-        color: if(!root.sidelight) root.primary_color; else root.night_light_color
-        text: if (root.speedunits === 0)
-                "km/h"
-                else if(root.speedunits === 1)
-                "mi/h"
-                else
-                ""
-        font.pixelSize: 32
-        horizontalAlignment: Text.AlignRight
-        z: 2
-        font.family: LEDCalculator.name
-        font.pointSize: 32
-    }
-
-    // RPM Marks
-    Row {
-        id: rpmLights
-        x: 16
-        y: 16
-        width: 768
-        height: 128
-        layoutDirection: Qt.LeftToRight
-        layer.enabled: true
-        smooth: false
-        clip: false
-        z: 2
-        Repeater {
-            property int index
-            z: 2
-            model: 100
-            Row {
-                Rectangle {
-                    height: 128
-
-                    //Control for how the bar is lit
-                    opacity: if (Math.floor(root.rpm / 100) > index + 1)
-                                 .7
-                             else if (Math.floor(root.rpm / 100) === index + 1)
-                                 1
-                             else
-                                 .15
-
-                    width: 3.68
-
-                    //Settings for how our RPM colors are set
-                    color: if (index < 59)
-                            if(!root.sidelight) root.primary_color; else root.night_light_color
-                    //Cam Changeover
-                           else if (index >= 59 && index < 79)
-                               root.sweetspot_color
-                    //Redline
-                           else
-                               root.warning_red
-                    radius: 2
-                }
-                Rectangle {
-                    id: rpm_marker_spacer
-                    height: 128
-                    opacity: 1
-                    width: 4
-                    color: root.background_color
-                    radius: 1
-                    border.width: 0
-                }
-            }
         }
-    }
-
-    //Actual RPM marks
-    Item {
-        id: rev_system
-        x: 16
-
-        //Tic Marks
-        Rectangle {
-            id: ticmark_line
-            width: 763
-            height: 2
-            x: 0
-            y: 160
-            z: 1
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-        }
-        Rectangle {
-            id: tickmark_redline
-            x: 609
-            width: 153
-            height: 2
-            color: root.warning_red
-            y: 160
-            z: 2
-        }
-
-        Row {
-            id: mainTicks
-            x: 0
-            y: 158
-            width: 765
-            height: 16
-            antialiasing: true
-            z: 2
-            Rectangle {
-                y: 0
-                x: 73.8
-                width: 6
-                height: 18
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 0
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 68
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 144
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 221
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 298
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 375
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 452
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 529
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 605
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.left: parent.left
-                anchors.leftMargin: 682
-            }
-            Rectangle {
-                y: 0
-                width: 6
-                height: 18
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                border.color: root.background_color
-                border.width: 2
-                anchors.right: parent.right
-                anchors.rightMargin: 0
-            }
-        }
-                Row {
-                    id: subTicks
-                    x: 30
-                    y: 160
-                    width: 710
-                    height: 16
-                    antialiasing: true
-                    z: 3
-                    Repeater {
-                        model: 8
-                        property int index
-                        Row {
-                            id: subTickRow
-                            width: 77
-
-                            Rectangle {
-                                width: 6
-                                height: 13
-                                x: 0
-                                y: -2
-                                border.color: root.background_color
-                                border.width: 2
-                                color: if (root.watertemp < 80) {
-                                           if (index <= 3)
-                                               root.engine_warmup_color
-                                           else
-                                            if(!root.sidelight) root.primary_color; else root.night_light_color
-
-                                       } else
-                                            if(!root.sidelight) root.primary_color; else root.night_light_color
-
-    
-
-                            }
-                        }
-                    }
-                }
-        Rectangle {
-            id: engine_warmup_line
-            x: 2
-            y: 160
-            width: 297
-            height: 2
-            z: 4
-            color: root.engine_warmup_color
-            visible: root.watertemp < 80
-        }
-
-        //RPM Numbers
-        //Changed to Manual position as the alignment wasn't nice enough for my preferences
-        Row {
-            id: numbers
-            x: 0
-            y: 180
-            height: 16
-            width: 768
-            Text {
-                id: rev_zero
-                x: 0
-               color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "0"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-            }
-            Text {
-                id: rev_one
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "1"
-                anchors.left: parent.left
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                anchors.leftMargin: 65
-                font.family: LEDCalculator.name
-            }
-            Text {
-                id: rev_two
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "2"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 141
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_three
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "3"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 218
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_four
-                color: if (root.watertemp < 80) 
-                    root.engine_warmup_color
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "4"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 295
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_five
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "5"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 373
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_six
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "6"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 449
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_seven
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "7"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 526
-                anchors.left: parent.left
-            }
-            Text {
-                id: numba_eight
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "8"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.leftMargin: 602
-                anchors.left: parent.left
-            }
-            Text {
-                id: rev_9
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "9"
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                font.family: LEDCalculator.name
-                anchors.rightMargin: 78
-                anchors.right: parent.right
-            }
-            Text {
-                id: rev_10
-                x: 0
-                y: 0
-                color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                text: "10"
-                anchors.right: parent.right
-                font.pixelSize: 16
-                horizontalAlignment: Text.AlignHCenter
-                anchors.rightMargin: 0
-                transformOrigin: Item.Right
-                font.family: LEDCalculator.name
-            }
-        }
-
         Text {
+            id: speed_label
+            x: 778
+            y: if (root.speedunits === 0)
+                    44
+                    else if(root.speedunits === 1)
+                    46
+                    else
+                    44
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: if (root.speedunits === 0)
+                    "KM/H"
+                    else if(root.speedunits === 1)
+                    "MI/H"
+                    else
+                    ""
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignRight
+            z: 2
+            font.family: bdoGrotesk.name
+            font.pointSize: 14
+            transform: Rotation{
+                    angle: 90
+                }
+        }
+        Text {
+            id: watertemp_display_val
+            text: root.watertemp.toFixed(0)
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            height: 38
+            x: 668
+            y: 110
+            z: 3
+            color: if (root.watertemp < root.waterlow)
+                        root.engine_warmup_color
+                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
+                    if(!root.sidelight) root.primary_color; else root.night_light_color
+                else
+                    root.warning_red
+        }
+         Text {
             id: watertemp_label
-            x: 113
-            y: 410
+            x: 778
+            y: 106
+            z: 4
             color: if (root.watertemp < root.waterlow)
                     root.engine_warmup_color
                 else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: "Water Temp °C"
-            font.pixelSize: 16
+            text: "WATER C"
+            font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
-            font.family: LEDCalculator.name
-        }
-
-        Text {
-            id: oiltemp_label
-            x: 113
-            y: 353
-            color: if (root.oiltemp < root.oiltemphigh)
-                       if(!root.sidelight) root.primary_color; else root.night_light_color
-                   else
-                       root.warning_red
-            text: "Oil Temp °C"
-            font.pixelSize: 16
-            horizontalAlignment: Text.AlignHCenter
-            font.family: LEDCalculator.name
-            visible: if(root.oiltemphigh === 0)false; else true
-
-        }
-
-        Text {
-            id: oilpressure_label
-            x: 113
-            y: 298
-            color: if (root.oilpressure < root.oilpressurelow)
-                    root.warning_red
-                else
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "Oil Pressure"
-            font.pixelSize: 16
-            horizontalAlignment: Text.AlignHCenter
-            font.family: LEDCalculator.name
-            visible: if(root.oilpressurehigh === 0)false; else true
-
-        }
-
-        Text {
-            id: fuel_label
-            x: 321
-            y: 431
-            width: 128
-            color: if (root.fuel > root.fuellow)
-                       if(!root.sidelight) root.primary_color; else root.night_light_color
-                   else
-                       root.warning_red
-            text: if (root.fuel > root.fuellow)
-                      root.fuel + " %"
-                  else
-                      "LOW FUEL!!"
-            font.pixelSize: 16
-            horizontalAlignment: Text.AlignHCenter
-            font.family: LEDCalculator.name
-        }
-    }
-
-    Item {
-        id: fueling_system
-        x: 336
-        y: 402
-        width: 128
-        height: 32
-        Row {
-            id: gasgauge
-            x: 0
-            y: -8
-            width: 128
-            height: 32
-            antialiasing: true
-            z: 3
-            Repeater {
-                model: 10
-                //  required
-                property int index
-                Row {
-                    Rectangle {
-                        width: 11
-                        height: 32
-                        color: if (Math.floor(root.fuel / 10) > index) {
-                                   if (root.fuel > 30)
-                                       if(!root.sidelight) root.primary_color; else root.night_light_color
-                                   else
-                                       root.warning_red
-                               } else
-                                   "#0A0A0A"
-                        radius: 2
-                        border.width: if (Math.floor(root.fuel / 10) > index) {
-                                          0
-                                      } else
-                                          1
-                        border.color: if(!root.sidelight) root.primary_color; else root.night_light_color
-                        z: 1
-                    }
-                    Rectangle {
-                        width: 2
-                        height: 32
-                        color: root.background_color
-                        z: 1
-                    }
-                }
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
             }
         }
+
+        Text {
+            id: oiltemp_display_val
+            text: root.oiltemp.toFixed(0)
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            height: 38
+            x: 668
+            y: 186
+            z: 3
+            color: if (root.oiltemp < root.oiltemphigh)
+                   if(!root.sidelight) root.primary_color; else root.night_light_color
+               else
+                   root.warning_red
+            // visible: if(root.oiltemphigh === 0)false; else true
+
+        }
+         Text {
+            id: oiltemp_label
+            x: 778
+            y: 196
+            z: 4
+            color: if (root.oiltemp < root.oiltemphigh)
+                   if(!root.sidelight) root.primary_color; else root.night_light_color
+               else
+                   root.warning_red
+            text: "OIL C"
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+            // visible: if(root.oiltemphigh === 0)false; else true
+
+        }
+         Text {
+            id: oilpressure_display_val
+            width: 86
+            height: 38
+            x: 668
+            y: 262
+            z: 3
+            text: root.oilpressure.toFixed(0) 
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            color: if (root.oilpressure < root.oilpressurelow)
+                        root.warning_red
+                    else
+                        if(!root.sidelight) root.primary_color; else root.night_light_color
+            // visible: if(root.oilpressurehigh === 0)false; else true
+        }
+        Text {
+            id: fuel_display_val
+            width: 86
+            height: 38
+            x: 668
+            y: 336
+            z: 3
+            text: root.fuel.toFixed(0) 
+            font.pixelSize: 48
+            font.family: ledCalculator.name
+            horizontalAlignment: Text.AlignRight
+            color: if (root.oilpressure < root.oilpressurelow)
+                        root.warning_red
+                    else
+                        if(!root.sidelight) root.primary_color; else root.night_light_color
+        }
+        Text {
+            id: odometer_display_val
+            // text: if (root.speedunits === 0)
+            //         root.odometer/.62
+            //         else if(root.speedunits === 1)
+            //         root.odometer
+            //         else
+            //         root.odometer
+            text: "123456"
+            font.pixelSize: 24
+            horizontalAlignment: Text.AlignRight
+            font.pointSize: 24
+            font.family: ledCalculator.name
+            x: 668
+            y: 416
+            z: 3
+            width: 86
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+        }
     }
+
+    
+
+    
+
     Item {
         id: icons
         Image {
@@ -919,16 +479,8 @@ Item {
             y: 296
             height: 29
             width: 46
-            source: "./img/brights.png"
+            source: "./img/brights_light.png"
             visible: root.mainbeam
-        }
-        Image{
-            x: 285
-            y: 301
-            height: 17
-            width: 49
-            source: "./img/parking_lights.png"
-            visible: root.sidelight
         }
 
         Image {
@@ -972,18 +524,18 @@ Item {
             y: 295
             width: 96
             height: 32
-            source: "./img/brake_light.png"
+            source: "./img/ebrake_light.png"
             visible: root.brake|root.handbrake //This is the way it is set in main.qml so trying this to see if it shows.
         }
-        Image {
-            id: tcs_image
-            x: 531
-            y: 295
-            width: 43
-            height: 32
-            source: "./img/tcs_light.png"
-            visible: root.tc
-        }
+        // Image {
+        //     id: tcs_image
+        //     x: 531
+        //     y: 295
+        //     width: 43
+        //     height: 32
+        //     source: "./img/tcs_light.png"
+        //     visible: root.tc
+        // }
         Image {
             id: oil_pressure_lamp
             x: 467
