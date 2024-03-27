@@ -302,7 +302,6 @@ Item {
         font.pixelSize: 48
         horizontalAlignment: Text.AlignRight
         font.family: ledCalculator.name
-        font.pointSize: 48
         x: 668
         y: 36
         z: 3
@@ -335,7 +334,6 @@ Item {
             horizontalAlignment: Text.AlignRight
             z: 2
             font.family: bdoGrotesk.name
-            font.pointSize: 14
             transform: Rotation{
                     angle: 90
                 }
@@ -608,10 +606,8 @@ Item {
                     root.odometer
                     else
                     root.odometer
-            // text: "123456"
             font.pixelSize: 24
             horizontalAlignment: Text.AlignRight
-            font.pointSize: 24
             font.family: ledCalculator.name
             x: 668
             y: 416
@@ -651,8 +647,126 @@ Item {
             width: 139
             source: "./img/left_column.png"
         }
-        Item{
-            id: shift_lights
+        Image {
+            id: dimLight1
+            x: 34
+            y: 36
+            z: 4
+            width: 31
+            height: 31
+            source: "./img/shift_lights_unlit.png"
+        }
+        Image {
+            id: dimLight2
+            x: 70
+            y: 36
+            z: 4
+            width: 31
+            height: 31
+            source: "./img/shift_lights_unlit.png"
+        }
+        Image {
+            id: dimLight3
+            x: 106
+            y: 36
+            z: 4
+            width: 31
+            height: 31
+            source: "./img/shift_lights_unlit.png"
+        }
+         Image{
+            id: shiftLight1
+            x: 30
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit - 1000 && root.rpm < root.rpmlimit ? true : false
+         }
+        Image{
+            id: shiftLight1_blink
+            x: 30
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit ? true : false
+            Timer{
+                id: rpm_shift_blink1
+                running: if(root.rpm >= root.rpmlimit)
+                            true
+                        else
+                            false
+                interval: 60
+                repeat: true
+                onTriggered: if(parent.opacity === 0){
+                        parent.opacity = 100
+                    }
+                    else{
+                        parent.opacity = 0
+                    } 
+            }
+        }
+        Image{
+            id: shiftLight2
+            x: 66
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit - 500 && root.rpm < root.rpmlimit ? true : false
+        }
+        Image{
+            id: shiftLight2_blink
+            x: 66
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit ? true : false
+            Timer{
+            id: rpm_shift_blink2
+            running: if(root.rpm >= root.rpmlimit)
+                        true
+                    else
+                        false
+            interval: 60
+            repeat: true
+            onTriggered: if(parent.opacity === 0){
+                    parent.opacity = 100
+                }
+                else{
+                    parent.opacity = 0
+                }
+            } 
+        }
+        Image{
+            id: shiftlight3
+            x: 102
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit - 250 && root.rpm < root.rpmlimit ? true : false
+        }
+        Image{
+            id: shiftLight3_blink
+            x: 102
+            y: 32
+            z: 5
+            source: "./img/shift_lights_lit.png"
+            visible: root.rpm >= root.rpmlimit ? true : false
+            Timer{
+            id: rpm_shift_blink3
+            running: if(root.rpm >= root.rpmlimit)
+                        true
+                    else
+                        false
+            interval: 60
+            repeat: true
+            onTriggered: if(parent.opacity === 0){
+                parent.opacity = 100
+            }
+            else{
+                parent.opacity = 0
+            } 
+        }
+
         }
         Item{
             id: dummy_lights
