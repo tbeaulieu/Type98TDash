@@ -433,7 +433,7 @@ Item {
         }
         Text {
             id: oiltemp_display_val_blink
-            text: if(!root.oiltempunits((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+            text: if(!root.oiltempunits)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
