@@ -342,7 +342,7 @@ Item {
         // This is doubled because we ALWAYS want to have a _solid_ value here, Opacity trigger gets messy
         Text {
             id: watertemp_display_val
-            text: root.watertemp.toFixed(0)
+            text: if(!root.waterunits){((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0)}; else root.watertemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -362,7 +362,7 @@ Item {
         }
         Text {
             id: watertemp_display_val_blink
-            text: root.watertemp.toFixed(0)
+            text: if(!root.waterunits){((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0)}; else root.watertemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -406,7 +406,7 @@ Item {
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: "WATER C"
+            text: if(!root.waterunits) "WATER F"; else "WATER C"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -417,7 +417,7 @@ Item {
 
         Text {
             id: oiltemp_display_val
-            text: root.oiltemp.toFixed(0)
+            text: if(!root.oiltempunits){((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0)}; else root.oiltemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -433,7 +433,7 @@ Item {
         }
         Text {
             id: oiltemp_display_val_blink
-            text: root.oiltemp.toFixed(0)
+            text: if(!root.oiltempunits){((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0)}; else root.oiltemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -473,7 +473,7 @@ Item {
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: "OIL C"
+            text: if(!root.oiltempunits) "OIL F"; else "OIL C"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
