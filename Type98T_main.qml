@@ -341,7 +341,7 @@ Item{
 
 FileIO {
     id: config_file
-    source: "/opt/Garw_IC7/screen_configs/type98T_config.txt"
+    source: "/opt/Garw_IC7/screen_configs/Type98T_config.txt"
     onError: console.log(msg)
        }
 
