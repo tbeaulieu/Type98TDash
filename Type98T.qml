@@ -1,14 +1,8 @@
-//Switch to 2.3 for Dash use... 6.2 is for preview in designer.
 import QtQuick 2.3
-
-//import Qt3D 1.0
 import QtGraphicalEffects 1.0
+import "img"
 
-//import QtGraphicalEffects 1.12
-import FileIO 1.0
 Item {
-
-
     /*#########################################################################
       #############################################################################
       Imported Values From GAWR inits
@@ -16,10 +10,15 @@ Item {
       #############################################################################
      */
     id: root
+    ////////// IC7 LCD RESOLUTION ////////////////////////////////////////////
+    width: 800
+    height: 480
+    
+    z: 0
+    
     property int myyposition: 0
     property int udp_message: rpmtest.udp_packetdata
 
-    // onUdp_messageChanged: console.log(" UDP is "+udp_message)
     property bool udp_up: udp_message & 0x01
     property bool udp_down: udp_message & 0x02
     property bool udp_left: udp_message & 0x04
@@ -69,7 +68,6 @@ Item {
     property real rpm: rpmtest.rpmdata
     property real rpmlimit: 8000 //Originally was 7k, switched to 8000 -t
     property real rpmdamping: 5
-    //property real rpmscaling:0
     property real speed: rpmtest.speeddata
     property int speedunits: 2
 
@@ -104,37 +102,6 @@ Item {
 
     property int gearpos: rpmtest.geardata
 
-    property real masterbrightness: 1
-    property real colourbrightness: 0.5
-
-    property string colorscheme: "green"
-    property int red: 0
-    property int green: 0
-    property int blue: 0
-    property string red_value: if (red < 16)
-                                   "0" + red.toString(16)
-                               else
-                                   red.toString(16)
-    property string green_value: if (green < 16)
-                                     "0" + green.toString(16)
-                                 else
-                                     green.toString(16)
-    property string blue_value: if (blue < 16)
-                                    "0" + blue.toString(16)
-                                else
-                                    blue.toString(16)
-
-    //  onColorschemeChanged: console.log("color scheme is "+colorscheme)
-    //property real masterbrightness:fuel/100
-
-    //  onRed_valueChanged: console.log("red_value hex "+red_value)
-    // onGreen_valueChanged: console.log("green_value hex "+green_value)
-    // onBlue_valueChanged: console.log("blue_value hex "+blue_value)
-    width: 800
-    height: 480
-    clip: true
-    z: 0
-
     property real speed_spring: 1
     property real speed_damping: 1
 
@@ -142,35 +109,6 @@ Item {
     property real rpm_needle_damping: 0.2 //if(rpm<1000).15; else 0.2
 
     property bool changing_page: rpmtest.changing_pagedata
-    //Commenting out this for possible future usage rather than deleting. -Tristan
-    onChanging_pageChanged: if (changing_page) {
-
-                                //                                temp_slider_colour_overlay.visible = false
-                                //                                gauge_back4.visible = false
-                                //                                oilp_slider_colour_overlay.visible = false
-                                //                                gauge_back3.visible = false
-                                //                                fuel_slider_colour_overlay.visible = false
-                                //                                gauge_back.visible = false
-                                //                                oilt_slider_colour_overlay.visible = false
-                                //                                gauge_back2.visible = false
-                            }
-    //See Above reason for commenting out
-    Component.onCompleted: delay_on_timer.start()
-    Timer {
-        id: delay_on_timer //this delay on timer is to delay the visibility of certain items , this gives a nice effect and stops opacity fade in of the screen looking crap
-        interval: 500
-        onTriggered: {
-
-            //            temp_slider_colour_overlay.visible = true
-            //            gauge_back4.visible = true
-            //            oilp_slider_colour_overlay.visible = true
-            //            gauge_back3.visible = true
-            //            fuel_slider_colour_overlay.visible = true
-            //            gauge_back.visible = true
-            //            oilt_slider_colour_overlay.visible = true
-            //            gauge_back2.visible = true
-        }
-    }
 
     //Tristan Generated Code Here:
     property string white_color: "#FFFFFF"
@@ -199,6 +137,7 @@ Item {
     /* ########################################################################## */
     Rectangle {
         id: background_rect
+        x: 0   
         y: 0
         width: 800
         height: 480
@@ -234,8 +173,7 @@ Item {
             width: 9
             source: './img/yellowneedle.png'
             antialiasing: true
-            transform:
-                Rotation {
+            transform: Rotation {
                     id: tachneedle_rotate
                     origin.y: 181
                     origin.x: 4
@@ -260,8 +198,7 @@ Item {
             width: 9
             source: './img/redline.png'
             antialiasing: true
-            transform:
-                Rotation {
+            transform: Rotation {
                     id: redline_tachneedle_rotate
                     origin.y: 181
                     origin.x: 4
@@ -848,31 +785,7 @@ Item {
                 source: "./img/srs_light.png"
                 visible: root.airbag
             }
-
-            // Image {
-            //     id: tcs_image
-            //     x: 531
-            //     y: 295
-            //     width: 43
-            //     height: 32
-            //     source: "./img/tcs_light.png"
-            //     visible: root.tc
-            // }
-            
-
-            
-            
-            
-            
         }
-    }
-
-    
-
-    Item {
-        id: icons
-        
-        
     }
 } //End Type98T Dash
 
