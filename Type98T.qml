@@ -538,7 +538,7 @@ Item {
         Text {
             id: odometer_display_val
             text: if (root.speedunits === 0)
-                    root.odometer/.62
+                    (root.odometer/.62).toFixed(0)
                     else if(root.speedunits === 1)
                     root.odometer
                     else
