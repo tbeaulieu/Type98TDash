@@ -364,7 +364,7 @@ Item {
             y: 186
             z: 3
             color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oiltemphigh === 0 && root.oiltemp < root.oiltemphigh)false; else true
+            visible: if(root.oiltemphigh === 0 || root.oiltemp < root.oiltemphigh)false; else true
             opacity: oil_temp_animate.running ? 0 : 1
             
         }
