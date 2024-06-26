@@ -279,7 +279,7 @@ Item {
         // This is doubled because we ALWAYS want to have a _solid_ value here, Opacity trigger gets messy
         Text {
             id: watertemp_display_val
-            text: if(root.waterunits !== 0)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
+            text: if(root.waterunits !== 1)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -299,7 +299,7 @@ Item {
         }
         Text {
             id: watertemp_display_val_blink
-            text: if(root.waterunits !== 0)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
+            text: if(root.waterunits !== 1)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -343,7 +343,7 @@ Item {
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: if(root.waterunits !== 0) "WATER F"; else "WATER C"
+            text: if(root.waterunits !== 1) "WATER F"; else "WATER C"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -354,7 +354,7 @@ Item {
 
         Text {
             id: oiltemp_display_val
-            text: if(root.oiltempunits !== 0)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -370,7 +370,7 @@ Item {
         }
         Text {
             id: oiltemp_display_val_blink
-            text: if(root.oiltempunits !== 0)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
+            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
@@ -410,7 +410,7 @@ Item {
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: if(root.oiltempunits !== 0) "OIL F"; else "OIL C"
+            text: if(root.oiltempunits !== 1) "OIL F"; else "OIL C"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -789,8 +789,3 @@ Item {
     }
 } //End Type98T Dash
 
-/*##^##
-Designer {
-    D{i:0}D{i:53;locked:true}
-}
-##^##*/
