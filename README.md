@@ -14,4 +14,4 @@
 3) Upload the dash via the uploader while connected to the GAWR Wifi.
 4) Follow the rest of the aforementioned instructions.
 
-There are some prebuilt releases for the uploader, check with the Discord Channel here: https://discord.gg/36kybUTW
+There are some prebuilt releases for the uploader, check with the Discord Channel here: https://discord.gg/bmKFrt8XP6
