@@ -582,8 +582,60 @@ Item {
             z: 2
             height: 448
             width: 139
-            source: "./img/left_column.png"
+            source: if(!root.sidelight) "./img/left_column.png"; else "./img/left_column_lit.png"
         }
+
+        //For those of us who don't run a wideband or AIT temp probe comment out the below.
+
+        Text{
+            x: 38;y:91; z:3
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: root.maf.toFixed(0)                   //Need to figure out value here?
+            font.pixelSize: 48
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            font.family: ledCalculator.name
+        }
+        Text {
+            id: ait_label
+            x: 148
+            y: 98
+            z: 4
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: "AIT C"
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+        }
+
+        Text{
+            x: 38;y:158; z:3
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: root.o2.toFixed(2)
+            font.pixelSize: 38
+            horizontalAlignment: Text.AlignRight
+            width: 86
+            font.family: ledCalculator.name
+        }
+        Text {
+            id: wideband_label
+            x: 148
+            y: 157
+            z: 4
+            color: if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: "O2 VLT"
+            font.pixelSize: 14
+            horizontalAlignment: Text.AlignHCenter
+            font.family: bdoGrotesk.name
+            transform: Rotation{
+                angle: 90
+            }
+        }
+        //End AIT/Wideband info
+        
         Image {
             id: dimLight1
             x: 34
