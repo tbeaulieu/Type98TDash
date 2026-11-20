@@ -64,8 +64,8 @@ Item{
     property int oiltemplow:0
     property int oiltemphigh:130
     property int oiltempunits:1
-    property int oilpressurelow:10
-    property int oilpressurehigh:80       // 0 hides the oil pressure readout
+    property int oilpressurelow:1         // bar (the sender value is in bar)
+    property int oilpressurehigh:10       // 0 hides the oil pressure readout
     property int oilpressureunits:0
     property real night_time_hue:0
 
