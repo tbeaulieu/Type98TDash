@@ -20,9 +20,6 @@ Settings are saved as JSON in `/opt/IC7/screen_configs/Type98T_config.json`. An 
 
 # Installation notes:
 
-1) Obtain the GARW dash installer here: https://github.com/dustinsterk/GARWDashUploader
-2) You will need to unzip this dashboard file, rename the folder to "Type98T" (Don't use the quotes), and recompress it. (I know, it's a pain)
-3) Upload the dash via the uploader while connected to the GAWR Wifi.
-4) Follow the rest of the aforementioned instructions.
+1) Install the dash via GARWGenie:  https://github.com/dustinsterk/GARWGenie
 
 There are some prebuilt releases for the uploader, check with the Discord Channel here: https://discord.gg/bmKFrt8XP6
