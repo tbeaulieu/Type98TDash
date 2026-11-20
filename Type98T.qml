@@ -1,843 +1,396 @@
+/****************************************************************************
+** Based on the Qt examples (Copyright (C) 2012 Nokia Corporation), BSD
+** license. See the original file header for the full license text.
+****************************************************************************/
+
 import QtQuick 2.3
 import QtGraphicalEffects 1.0
-import "img"
 
-Item {
-    /*#########################################################################
-      #############################################################################
-      Imported Values From GAWR inits
-      #############################################################################
-      #############################################################################
-     */
-    id: root
-    ////////// IC7 LCD RESOLUTION ////////////////////////////////////////////
-    width: 800
-    height: 480
-    
-    z: 0
-    
-    property int myyposition: 0
-    property int udp_message: rpmtest.udp_packetdata
+import FileIO 1.0
 
-    property bool udp_up: udp_message & 0x01
-    property bool udp_down: udp_message & 0x02
-    property bool udp_left: udp_message & 0x04
-    property bool udp_right: udp_message & 0x08
+Item{
+    id:root
 
-    property int membank2_byte7: rpmtest.can203data[10]
-    property int inputs: rpmtest.inputsdata
+    property int udp_message:rpmtest.udp_packetdata
+    // onUdp_messageChanged: console.log(" UDP is "+udp_message)
 
-    //Inputs//31 max!!
-    property bool ignition: inputs & 0x01
-    property bool battery: inputs & 0x02
-    property bool lapmarker: inputs & 0x04
-    property bool rearfog: inputs & 0x08
-    property bool mainbeam: inputs & 0x10
-    property bool up_joystick: inputs & 0x20 || root.udp_up
-    property bool leftindicator: inputs & 0x40
-    property bool rightindicator: inputs & 0x80
-    property bool brake: inputs & 0x100
-    property bool oil: inputs & 0x200
-    property bool seatbelt: inputs & 0x400
-    property bool sidelight: inputs & 0x800
-    property bool tripresetswitch: inputs & 0x1000
-    property bool down_joystick: inputs & 0x2000 || root.udp_down
-    property bool doorswitch: inputs & 0x4000
-    property bool airbag: inputs & 0x8000
-    property bool tc: inputs & 0x10000
-    property bool abs: inputs & 0x20000
-    property bool mil: inputs & 0x40000
-    property bool shift1_id: inputs & 0x80000
-    property bool shift2_id: inputs & 0x100000
-    property bool shift3_id: inputs & 0x200000
-    property bool service_id: inputs & 0x400000
-    property bool race_id: inputs & 0x800000
-    property bool sport_id: inputs & 0x1000000
-    property bool cruise_id: inputs & 0x2000000
-    property bool reverse: inputs & 0x4000000
-    property bool handbrake: inputs & 0x8000000
-    property bool tc_off: inputs & 0x10000000
-    property bool left_joystick: inputs & 0x20000000 || root.udp_left
-    property bool right_joystick: inputs & 0x40000000 || root.udp_right
-
-    property int odometer: rpmtest.odometer0data/10*0.62 //Need to div by 10 to get 6 digits with leading 0
-    property int tripmeter: rpmtest.tripmileage0data*0.62
-    property real value: 0
-    property real shiftvalue: 0
-
-    property real rpm: rpmtest.rpmdata
-    property real rpmlimit: 8000 //Originally was 7k, switched to 8000 -t
-    property real rpmdamping: 5
-    property real speed: rpmtest.speeddata
-    property int speedunits: 2
-
-    property real watertemp: rpmtest.watertempdata
-    property real waterhigh: 0
-    property real waterlow: 80
-    property real waterunits: 1
-
-    property real fuel: rpmtest.fueldata
-    property real fuelhigh: 0
-    property real fuellow: 0
-    property real fuelunits
-    property real fueldamping
-
-    property real o2: rpmtest.o2data
-    property real map: rpmtest.mapdata
-    property real maf: rpmtest.mafdata
-
-    property real oilpressure: rpmtest.oilpressuredata
-    property real oilpressurehigh: 0
-    property real oilpressurelow: 0
-    property real oilpressureunits: 0
-
+    property bool udp_up:udp_message&0x01
+    property bool udp_down:udp_message&0x02
+    property bool udp_left:udp_message&0x04
+    property bool udp_right:udp_message&0x08
+    property int odometer:if(speedunits==0)rpmtest.odometer0data;else rpmtest.odometer0data*0.62
+    property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.62
+    property real rpm:rpmtest.rpmdata
+    property real speed:rpmtest.speeddata
+    property int speedunits:1
+    property real watertemp:rpmtest.watertempdata
+    property real fuel:rpmtest.fueldata
+    property real o2:rpmtest.o2data
+    property real map:rpmtest.mapdata
+    property real maf:rpmtest.mafdata
+    property real oilpressure:rpmtest.oilpressuredata
     property real oiltemp: rpmtest.oiltempdata
-    property real oiltemphigh: 90
-    property real oiltemplow: 90
-    property real oiltempunits: 1
+    property real batteryvoltage:rpmtest.batteryvoltagedata
 
-    property real batteryvoltage: rpmtest.batteryvoltagedata
+    property real symbols:rpmtest.symbolsdata
+    property real symbols2:rpmtest.symbols2data
 
-    property int mph: (speed * 0.62)
+    property real gearpos:rpmtest.geardata
 
-    property int gearpos: rpmtest.geardata
+    property real rpmlimit:8000
+    property real shiftvalue:0
+    property string colorscheme: "green"
+    property int red: 255
+    property int green: 128
+    property int blue: 100
 
-    property real speed_spring: 1
-    property real speed_damping: 1
+    property real rpmdamping:1
 
-    property real rpm_needle_spring: 3.0 //if(rpm<1000)0.6 ;else 3.0
-    property real rpm_needle_damping: 0.2 //if(rpm<1000).15; else 0.2
+    property real batterylow:0
+    property real batteryhigh:0
+    property real batteryunits:0
 
-    property bool changing_page: rpmtest.changing_pagedata
+    property real afrlow:0
+    property real afrhigh:0
+    property real afrunits:0
 
-    //Tristan Generated Code Here:
-    property string white_color: "#FFFFFF"
-    property string primary_color: "#000000"; //#FFBF00 for amber
-    property string night_light_color: "#BFFFAC"  //LCD Green
-    property string sweetspot_color: "#FFA500" //Cam Changeover Rev colpr
-    property string warning_red: "#FF0000" //Redline/Warning colors
-    property string engine_warmup_color: "#eb7500"
-    property string background_color: "#000000"
-    x: 0
-    y: 0
+    // Defaults for a fresh install (no JSON and no old .txt to migrate)
+    property int waterlow:80
+    property int waterhigh:105
+    property int waterunits:1
+    property int fuellow:10
+    property int fuelhigh:0
+    property int fuelunits:1
+    property int oiltemplow:0
+    property int oiltemphigh:130
+    property int oiltempunits:1
+    property int oilpressurelow:10
+    property int oilpressurehigh:80       // 0 hides the oil pressure readout
+    property int oilpressureunits:0
+    property real night_time_hue:0
 
-    //Fonts
-    FontLoader {
-        id: ledCalculator
-        source: "./fonts/LEDCalculator.ttf"
+    property bool settings_on_off:false
+    property bool menu_on_off:rpmtest.settings_on_offdata&0x02
+
+    onSettings_on_offChanged: {
+        if(settings_on_off) rpmtest.settings_on_offdata=rpmtest.settings_on_offdata|0x01
+        else rpmtest.settings_on_offdata=rpmtest.settings_on_offdata&~0x01
     }
+
+    width:800
+    height:480
+    x: 0
+
     FontLoader {
         id: bdoGrotesk
         source: "./fonts/BDOGrotesk-VF.ttf"
     }
+    ///////////////////////////////
+    // Config (JSON)
+    ///////////////////////////////
 
+    FileIO {
+        id: config_json
+        source: "/opt/IC7/screen_configs/Type98T_config.json"
+        onError: console.log(msg)
+    }
 
-    /* ########################################################################## */
-    /* Main Layout items */
-    /* ########################################################################## */
-    Rectangle {
-        id: background_rect
-        x: 0   
-        y: 0
-        width: 800
-        height: 480
-        color: root.background_color
-        border.width: 0
-        z: 0
+    // Old positional files, read once for migration only.
+    // v5+ firmware keeps them in /opt/IC7, v4 kept them in /opt/Garw_IC7.
+    FileIO {
+        id: config_file
+        source: "/opt/IC7/screen_configs/Type98T_config.txt"
+        onError: console.log(msg)
     }
-    Image{
-        id: carbon_bkg
-        x:0
-        y:0
-        z:0
-        width: 800
-        height: 480
-        source: "./img/carbon_bkg.png"
+    FileIO {
+        id: config_file_v4
+        source: "/opt/Garw_IC7/screen_configs/Type98T_config.txt"
+        onError: console.log(msg)
     }
-    Image{
-        id: tachometer_bkg
-        x: 166
-        y: 6
+
+    // The schema. One entry per setting.
+    //   disabled: true -> the property still exists (so the dial can bind to it),
+    //   but it is hidden from the menu and not written to or read from the JSON.
+    readonly property var schema: [
+        { key: "colorscheme",      type: "string" },
+        { key: "red" },  { key: "green" },  { key: "blue" },
+        { key: "waterlow" },       { key: "waterhigh" },       { key: "waterunits" },
+        { key: "fuellow" },
+        { key: "oiltemphigh" },    { key: "oiltempunits" },
+        { key: "oilpressurelow" }, { key: "oilpressurehigh" },
+        { key: "speedunits" },     { key: "rpmlimit" },
+        // the Type98T dial has nothing that uses these
+        { key: "fuelhigh",         disabled: true },
+        { key: "fuelunits",        disabled: true },
+        { key: "oiltemplow",       disabled: true },
+        { key: "oilpressureunits", disabled: true },
+        { key: "shiftvalue",       disabled: true },
+        { key: "night_time_hue",   disabled: true },
+        { key: "rpmdamping",       disabled: true },
+        { key: "batterylow",       disabled: true },
+        { key: "batteryhigh",      disabled: true },
+        { key: "afrlow",           disabled: true },
+        { key: "afrhigh",          disabled: true }
+    ]
+
+    // What the menu should list and what gets persisted
+    readonly property var editableSettings: schema.filter(function(s) { return !s.disabled })
+
+    // Old positional layout (line number -> key), used once for migration
+    readonly property var legacyKeys: [
+        "colorscheme", "red", "green", "blue",
+        "waterlow", "waterhigh", "waterunits",
+        "fuellow", "fuelhigh", "fuelunits",
+        "oiltemplow", "oiltemphigh", "oiltempunits",
+        "oilpressurelow", "oilpressurehigh", "oilpressureunits",
+        "speedunits", "rpmlimit", "shiftvalue", "night_time_hue",
+        "batterylow", "batteryhigh", "rpmdamping",
+        null,                       // line 23 was unused
+        "afrhigh", "afrlow"
+    ]
+
+    function schemaEntry(key) {
+        for (var i = 0; i < schema.length; i++)
+            if (schema[i].key === key) return schema[i]
+        return null
+    }
+
+    // IC7 FileIO returns one line per open, so re-open for every line
+    function readLines(f, maxLines) {
+        var out = []
+        for (var i = 0; i < maxLines; i++) {
+            var s = ""
+            try { f.openforreading(); s = f.readopenfile(i); f.close() }
+            catch (e) { console.log("config read failed at line " + i + ": " + e) }
+            if (s === "" || s === undefined || s === null) break
+            out.push(String(s))
+        }
+        return out
+    }
+
+    function applyConfigValue(key, v) {
+        var e = schemaEntry(key)
+        if (!e || e.disabled) return
+        if (e.type === "string") root[key] = String(v)
+        else if (!isNaN(Number(v))) root[key] = Number(v)
+    }
+
+    // returns "json", "legacy", "none" or "error"
+    function loadConfig() {
+        var lines = readLines(config_json, 300)
+        if (lines.length > 0) {
+            try {
+                var obj = JSON.parse(lines.join("\n"))
+                for (var i = 0; i < editableSettings.length; i++) {
+                    var k = editableSettings[i].key
+                    if (obj.hasOwnProperty(k)) applyConfigValue(k, obj[k])
+                }
+                return "json"
+            } catch (e) {
+                console.log("config JSON invalid, keeping defaults and NOT overwriting: " + e)
+                return "error"
+            }
+        }
+        var old = readLines(config_file, 26)
+        if (old.length === 0) old = readLines(config_file_v4, 26)
+        if (old.length > 0) {
+            for (var j = 0; j < old.length && j < legacyKeys.length; j++)
+                if (legacyKeys[j]) applyConfigValue(legacyKeys[j], old[j])
+            return "legacy"
+        }
+        return "none"
+    }
+
+    function save_settings() {
+        var obj = {}
+        for (var i = 0; i < editableSettings.length; i++)
+            obj[editableSettings[i].key] = root[editableSettings[i].key]
+        try {
+            config_json.open()
+            config_json.writetoopenfile(JSON.stringify(obj, null, 2) + "\n")   // single write
+            config_json.close()
+        } catch (e) { console.log("config write failed: " + e) }
+    }
+
+    Component.onCompleted: {
+        try { rpmtest.DISABLE_WARNING_OVERLAY = "YES_WARNINGS_HANDLED_LOCALLY" } catch (e) {}
+        var r = loadConfig()
+        if (r === "legacy" || r === "none") save_settings()   // migrate / seed defaults
+    }
+
+    ///////////////////////////////
+    // Inputs (unchanged)
+    ///////////////////////////////
+
+    property int inputs:rpmtest.inputsdata
+
+    //Inputs//31 max!!
+    property bool ignition      :inputs&0x01
+    property bool battery       :inputs&0x02
+    property bool lapmarker     :inputs&0x04
+    property bool rearfog       :inputs&0x08
+    property bool mainbeam      :inputs&0x10
+    property bool up_joystick   :inputs&0x20 || root.udp_up
+    property bool leftindicator :inputs&0x40
+    property bool rightindicator:inputs&0x80
+    property bool brake         :inputs&0x100
+    property bool oil           :inputs&0x200
+    property bool seatbelt      :inputs&0x400
+    property bool sidelight     :inputs&0x800
+    property bool tripresetswitch     :inputs&0x1000
+    property bool down_joystick :inputs&0x2000 || root.udp_down
+    property bool doorswitch    :inputs&0x4000
+    property bool airbag        :inputs&0x8000
+    property bool tc            :inputs&0x10000
+    property bool abs           :inputs&0x20000
+    property bool mil           :inputs&0x40000
+    property bool shift1_id     :inputs&0x80000
+    property bool shift2_id     :inputs&0x100000
+    property bool shift3_id     :inputs&0x200000
+    property bool service_id    :inputs&0x400000
+    property bool race_id       :inputs&0x800000
+    property bool sport_id      :inputs&0x1000000
+    property bool cruise_id     :inputs&0x2000000
+    property bool reverse:inputs&0x4000000
+    property bool handbrake :inputs&0x8000000
+    property bool tc_off     :inputs&0x10000000
+    property bool left_joystick :inputs&0x20000000 || root.udp_left
+    property bool right_joystick:inputs&0x40000000 || root.udp_right
+
+    onUp_joystickChanged: console.log("up")
+    onDown_joystickChanged: console.log("down")
+    onLeft_joystickChanged: console.log("left")
+    onRight_joystickChanged: console.log("right")
+
+    property bool movedown:left_joystick
+    property bool moveup:right_joystick
+    property bool increament:up_joystick
+    property bool decreament:down_joystick
+
+    ///////////////////////////////
+    // Settings menu (new)
+    ///////////////////////////////
+
+    SettingsMenu {
+        id: menu
+        target: root
+        open: root.settings_on_off
+        labelFont: bdoGrotesk.name
+        valueFont: bdoGrotesk.name
         z: 1
-        width: 468
-        height: 468
-        source: "./img/tach_bkg.png"
-    }
-    Item{
-        id: tachometer_needle
-        z: 4
-        x: 396
-        y: 60
-        Image{
-            height: 181
-            width: 9
-            source: './img/yellowneedle.png'
-            antialiasing: true
-            transform: Rotation {
-                    id: tachneedle_rotate
-                    origin.y: 181
-                    origin.x: 4
-                    angle: Math.min(Math.max(-192, Math.round((root.rpm/1000)*24) - 192), 48)                
-                    Behavior on angle {
-                        SpringAnimation {
-                            spring: rpm_needle_spring
-                            damping:rpm_needle_damping
-                        }
-                    }
-                }
-        }
+        onExitRequested: { root.settings_on_off = false; root.save_settings() }
     }
 
-    Item{
-        id: redline_tachometer_needle
-        z: 4
-        x: 396
-        y: 60
-        Image{
-            height: 181
-            width: 9
-            source: './img/redline.png'
-            antialiasing: true
-            transform: Rotation {
-                    id: redline_tachneedle_rotate
-                    origin.y: 181
-                    origin.x: 4
-                    angle: Math.min(Math.max(-192, Math.round((root.rpmlimit/1000)*24) - 192), 48)                
-                    Behavior on angle {
-                        SpringAnimation {
-                            spring: rpm_needle_spring
-                            damping:rpm_needle_damping
-                        }
-                    }
-                }
-        }
-    }
-    Image{
-        id: tach_center
-        x: 339.5
-        y: 179
-        z: 5
-        width: 121
-        height: 127
-        source: "./img/rev_center.png"
+    onMovedownChanged: if (movedown && settings_on_off) menu.move(-1)
+    onMoveupChanged:   if (moveup   && settings_on_off) menu.move(1)
+
+    // up: opens the menu, otherwise changes the selected value
+    onIncreamentChanged: {
+        if (increament) {
+            if (!settings_on_off) { if (!menu_on_off) settings_on_off = true }
+            else if (!menu_on_off) menu.press(1)
+        } else menu.release()
     }
 
-    //Right Side Unit
-    Item{
-        id: right_side_information
-        Image{
-            id: lcd_background
-            x: 645
-            y: 16
-            z: 2
-            height: 448
-            width: 139
-            source: if(!root.sidelight)"./img/unlit_right_column.png";else "./img/lit_right_column.png"
-        }
-        Text {
-        id: speed_display_val
-        font.pixelSize: 48
-        horizontalAlignment: Text.AlignRight
-        font.family: ledCalculator.name
-        x: 668
-        y: 36
-        z: 3
-        width: 86
-        color: if(!root.sidelight) root.primary_color; else root.night_light_color
-        text: if (root.speedunits === 0){
-                    root.speed.toFixed(0) 
-                }
-                else{
-                    root.mph.toFixed(0)
-                }
-        }
-        Text {
-            id: speed_label
-            x: 778
-            y: if (root.speedunits === 0)
-                    44
-                    else if(root.speedunits === 1)
-                    46
-                    else
-                    44
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: if (root.speedunits === 0)
-                    "KM/H"
-                    else if(root.speedunits === 1)
-                    "MI/H"
-                    else
-                    ""
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignRight
-            z: 2
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                    angle: 90
-                }
-        }
-
-        // This is doubled because we ALWAYS want to have a _solid_ value here, Opacity trigger gets messy
-        Text {
-            id: watertemp_display_val
-            text: if(root.waterunits !== 1)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            height: 38
-            x: 668
-            y: 110
-            z: 3
-            
-            color: if (root.watertemp < root.waterlow)
-                        root.engine_warmup_color
-                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                else
-                    root.warning_red
-            visible: if(root.watertemp < root.waterhigh) true; else false
-        }
-        Text {
-            id: watertemp_display_val_blink
-            text: if(root.waterunits !== 1)((((root.watertemp.toFixed(0))*9)/5)+32).toFixed(0); else root.watertemp.toFixed(0)
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            height: 38
-            x: 668
-            y: 110
-            z: 3
-            opacity: water_temp_animate.running ? 0 : 1
-            color: if (root.watertemp < root.waterlow)
-                        root.engine_warmup_color
-                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                else
-                    root.warning_red
-            Timer{
-                id: water_temp_animate
-                running: if (root.watertemp > root.waterhigh)
-                            true
-                        else
-                            false
-                interval: 500
-                repeat: true
-                onTriggered: if(parent.opacity === 0){
-                    parent.opacity = 1
-                }
-                else{
-                    parent.opacity = 0
-                } 
-            }
-            visible: if(root.watertemp < root.waterhigh) false; else true
-        }
-         Text {
-            id: watertemp_label
-            x: 778
-            y: 106
-            z: 4
-            color: if (root.watertemp < root.waterlow)
-                    root.engine_warmup_color
-                else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-            text: if(root.waterunits !== 1) "WATER F"; else "WATER C"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-        }
-
-        Text {
-            id: oiltemp_display_val
-            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            height: 38
-            x: 668
-            y: 186
-            z: 3
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oiltemphigh === 0 || root.oiltemp < root.oiltemphigh)false; else true
-            opacity: oil_temp_animate.running ? 0 : 1
-            
-        }
-        Text {
-            id: oiltemp_display_val_blink
-            text: if(root.oiltempunits !== 1)((((root.oiltemp.toFixed(0))*9)/5)+32).toFixed(0); else root.oiltemp.toFixed(0)
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            height: 38
-            x: 668
-            y: 186
-            z: 3
-            color: if (root.oiltemp < root.oiltemphigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-            visible: if(root.oiltemphigh === 0)false; else true
-            opacity: oil_temp_animate.running ? 0 : 1
-            Timer{
-                id: oil_temp_animate
-                running: if (root.oiltemp > root.oiltemphigh)
-                            true
-                        else
-                            false
-                interval: 500
-                repeat: true
-                onTriggered: if(parent.opacity === 0){
-                    parent.opacity = 1
-                }
-                else{
-                    parent.opacity = 0
-                }
-            }
-        }
-         Text {
-            id: oiltemp_label
-            x: 778
-            y: 194
-            z: 4
-            color: if (root.oiltemp < root.oiltemphigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-            text: if(root.oiltempunits !== 1) "OIL F"; else "OIL C"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-            visible: if(root.oiltemphigh === 0)false; else true
-
-        }
-         Text {
-            id: oilpressure_display_val
-            width: 86
-            height: 38
-            x: 668
-            y: 262
-            z: 3
-            text: root.oilpressure.toFixed(0) 
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
-                        root.warning_red
-                    else
-                        if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oilpressurehigh === 0 || root.oilpressure.toFixed(0) < root.oilpressurelow)false; else true
-            }
-        Text {
-            id: oilpressure_display_val_blink
-            width: 86
-            height: 38
-            x: 668
-            y: 262
-            z: 3
-            text: root.oilpressure.toFixed(0) 
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
-                        root.warning_red
-                    else
-                        if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oilpressurehigh !== 0 && root.oilpressure.toFixed(0) < root.oilpressurelow)true; else false
-            opacity: oil_pressure_animate.running ? 0 : 1
-            Timer{
-                id: oil_pressure_animate
-                running: if(root.oilpressure.toFixed(0) <= root.oilpressurelow)
-                            true
-                        else
-                            false
-                interval: 500
-                repeat: true
-                onTriggered: if(parent.opacity === 0){
-                    parent.opacity = 1
-                }
-                else{
-                    parent.opacity = 0
-                } 
-            }
-        }
-
-        Text {
-            id: oilpressure_label
-            x: 778
-            y: 260
-            z: 4
-            color: if (root.oilpressure.toFixed(0) > root.oilpressurelow)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
-            text: "OIL PRS"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-            visible: if(root.oilpressurehigh === 0)false; else true
-
-        }
-        Text {
-            id: fuel_display_val
-            width: 86
-            height: 38
-            x: 668
-            y: 336
-            z: 3
-            text: root.fuel.toFixed(0) 
-            font.pixelSize: 48
-            font.family: ledCalculator.name
-            horizontalAlignment: Text.AlignRight
-            opacity: gas_animate.running ? 0 : 1
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            Timer{
-                id: gas_animate
-                running: if(root.fuel <= root.fuellow)
-                            true
-                        else
-                            false
-                interval: 500
-                repeat: true
-                onTriggered: if(parent.opacity === 0){
-                    parent.opacity = 1
-                }
-                else{
-                    parent.opacity = 0
-                } 
-            }
-        }
-        Text {
-            id: fuel_level_label
-            x: 778
-            y: 336
-            z: 4
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "FUEL %"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-        }
-
-
-        Text {
-            id: odometer_display_val
-            text: if (root.speedunits === 0)
-                    (root.odometer/.62).toFixed(0)
-                    else if(root.speedunits === 1)
-                    root.odometer.toFixed(0)
-                    else
-                    root.odometer.toFixed(0)
-            font.pixelSize: 24
-            horizontalAlignment: Text.AlignRight
-            font.family: ledCalculator.name
-            x: 668
-            y: 416
-            z: 3
-            width: 86
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-        }
-        Text {
-            id: odometer_label
-            x: 778
-            y: 420
-            z: 4
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: if (root.speedunits === 0)
-                    "Km"
-                    else if(root.speedunits === 1)
-                    "Mi"
-                    else
-                    ""
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-        }
+    // down: changes the selected value
+    onDecreamentChanged: {
+        if (decreament) { if (settings_on_off) menu.press(-1) }
+        else menu.release()
     }
 
-    Item{
-        id: left_side_column
-        Image{
-            id: left_column_bkg
-            x: 16
-            y: 17
-            z: 2
-            height: 448
-            width: 139
-            source: if(!root.sidelight) "./img/left_column.png"; else "./img/left_column_lit.png"
-        }
+    ///////////////////////////////
+    // Dial: shrinks to a live preview while settings are open
+    ///////////////////////////////
 
-        //For those of us who don't run a wideband or AIT temp probe comment out the below.
+    // `screen` is the thing that shrinks when settings open. Anything inside it
+    // (the Type98T dial and/or your pasted screen QML) shrinks together.
+    Item {
+        id: screen
+        width: 800
+        height: 480
+        clip: true
+        z: 0
 
-        Text{
-            x: 38;y:91; z:3
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: root.maf.toFixed(0)                   //Need to figure out value here?
-            font.pixelSize: 48
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            font.family: ledCalculator.name
-        }
-        Text {
-            id: ait_label
-            x: 148
-            y: 98
-            z: 4
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "AIT C"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-        }
-
-        Text{
-            x: 38;y:158; z:3
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: root.o2.toFixed(2)
-            font.pixelSize: 38
-            horizontalAlignment: Text.AlignRight
-            width: 86
-            font.family: ledCalculator.name
-        }
-        Text {
-            id: wideband_label
-            x: 148
-            y: 157
-            z: 4
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "O2 VLT"
-            font.pixelSize: 14
-            horizontalAlignment: Text.AlignHCenter
-            font.family: bdoGrotesk.name
-            transform: Rotation{
-                angle: 90
-            }
-        }
-        //End AIT/Wideband info
-        
-        Image {
-            id: dimLight1
-            x: 34
-            y: 36
-            z: 4
-            width: 31
-            height: 31
-            source: "./img/shift_lights_unlit.png"
-        }
-        Image {
-            id: dimLight2
-            x: 70
-            y: 36
-            z: 4
-            width: 31
-            height: 31
-            source: "./img/shift_lights_unlit.png"
-        }
-        Image {
-            id: dimLight3
-            x: 106
-            y: 36
-            z: 4
-            width: 31
-            height: 31
-            source: "./img/shift_lights_unlit.png"
-        }
-         Image{
-            id: shiftLight1
-            x: 30
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit - 1000 && root.rpm < root.rpmlimit ? true : false
-         }
-        Image{
-            id: shiftLight1_blink
-            x: 30
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit ? true : false
-            Timer{
-                id: rpm_shift_blink1
-                running: if(root.rpm >= root.rpmlimit)
-                            true
-                        else
-                            false
-                interval: 60
-                repeat: true
-                onTriggered: if(parent.opacity === 0){
-                        parent.opacity = 100
-                    }
-                    else{
-                        parent.opacity = 0
-                    } 
-            }
-        }
-        Image{
-            id: shiftLight2
-            x: 66
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit - 500 && root.rpm < root.rpmlimit ? true : false
-        }
-        Image{
-            id: shiftLight2_blink
-            x: 66
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit ? true : false
-            Timer{
-            id: rpm_shift_blink2
-            running: if(root.rpm >= root.rpmlimit)
-                        true
-                    else
-                        false
-            interval: 60
-            repeat: true
-            onTriggered: if(parent.opacity === 0){
-                    parent.opacity = 100
-                }
-                else{
-                    parent.opacity = 0
-                }
-            } 
-        }
-        Image{
-            id: shiftlight3
-            x: 102
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit - 250 && root.rpm < root.rpmlimit ? true : false
-        }
-        Image{
-            id: shiftLight3_blink
-            x: 102
-            y: 32
-            z: 5
-            source: "./img/shift_lights_lit.png"
-            visible: root.rpm >= root.rpmlimit ? true : false
-            Timer{
-            id: rpm_shift_blink3
-            running: if(root.rpm >= root.rpmlimit)
-                        true
-                    else
-                        false
-            interval: 60
-            repeat: true
-            onTriggered: if(parent.opacity === 0){
-                parent.opacity = 100
-            }
-            else{
-                parent.opacity = 0
-            } 
-        }
-
-        }
-        Item{
-            id: dummy_lights
-            z:3
-            Image {
-                id: left_blinker
-                x: 27
-                y: 248
-                source: "./img/left_blinker.png"
-                visible: root.leftindicator
-            }
-            Image {
-                id: right_blinker
-                x: 90
-                y: 248
-                source: "./img/right_blinker.png"
-                visible: root.rightindicator
-            }
-            Image {
-                id: door_ajar_lamp
-                x: 27
-                y: 282
-                source: "./img/door_light.png"
-                visible: root.doorswitch
-            }
-            Image {
-                id: ebrake_image
-                x: 90
-                y: 282
-                source: "./img/ebrake_light.png"
-                visible: root.brake|root.handbrake //This is the way it is set in main.qml so trying this to see if it shows.
-            }
-            Image {
-                id: seatbelt_warning_lamp
-                x: 27
-                y: 316
-                source: "./img/seatbelt_light.png"
-                visible: root.seatbelt
-            }
-            Image {
-                id: abs_image
-                x: 90
-                y: 316
-                source: "./img/abs_light.png"
-                visible: root.abs
-            } 
-            Image {
-                id: battery_image
-                x: 27
-                y: 350
-                source: "./img/battery_light.png"
-                visible: root.battery
-            }
-            Image {
-                id: oil_pressure_lamp
-                x: 27
-                y: 384
-                source: "img/oil_light.png"
-                visible: root.oil
-            }
-            Image {
-                id: cel_image
-                x: 90
-                y: 384
-                source: "./img/cel_light.png"
-                visible: root.mil
-            }
-            Image {
-                id: brights_image
-                x: 27
-                y: 418
-                source: "./img/brights_light.png"
-                visible: root.mainbeam
-            }
-            Image {
-                id: srs_light
-                x: 90
-                y: 418
-                source: "./img/srs_light.png"
-                visible: root.airbag
-            }
-        }
+        x: root.settings_on_off ? 120 : 0
+        Behavior on x { NumberAnimation { duration: 500 } }
+        y: root.settings_on_off ? 15 : 0
+        Behavior on y { NumberAnimation { duration: 500 } }
+        scale: root.settings_on_off ? 0.7 : 1.0
+        Behavior on scale { NumberAnimation { duration: 500 } }
+    Type98TDisplay  {
+        id: dial
+        odometer:root.odometer/10      // dial wants 6 digits
+        tripmeter:root.tripmeter
+        shiftvalue:root.shiftvalue
+        rpm:root.rpm
+        rpmlimit:root.rpmlimit
+        rpmdamping:root.rpmdamping
+        speed:root.speed
+        speedunits: root.speedunits
+        watertemp:root.watertemp
+        waterhigh:root.waterhigh
+        waterlow:root.waterlow
+        waterunits: root.waterunits
+        fuel:root.fuel
+        fuelhigh:root.fuelhigh
+        fuellow:root.fuellow
+        fuelunits: root.fuelunits
+        o2: root.o2
+        map: root.map
+        maf: root.maf
+        oilpressure: root.oilpressure
+        oilpressurehigh:root.oilpressurehigh
+        oilpressurelow:root.oilpressurelow
+        oilpressureunits: root.oilpressureunits
+        oiltemp: root.oiltemp
+        oiltemphigh:root.oiltemphigh
+        oiltemplow: root.oiltemplow
+        oiltempunits: root.oiltempunits
+        batteryvoltage: root.batteryvoltage
+        userColor: Qt.rgba(root.red/255, root.green/255, root.blue/255, 1)
+        gearpos: root.gearpos
+        udp_message:root.udp_message
+        inputs: root.inputs
+        settingsFocus: menu.focusKey
+        opacity: 1
+        width: 800
+        height: 480
+        antialiasing: true
+        clip: true
     }
-} //End Type98T Dash
 
+    // =====================================================================
+    //  PASTE YOUR SCREEN QML BELOW THIS LINE
+    //  (items go here as siblings of Type98TDisplay; this whole `screen` Item
+    //   shrinks when settings are open)
+    //
+    //  - Read live values as root.rpm, root.speed, root.watertemp, ...
+    //    (anything declared at the top of this file)
+    //  - Use `root.` rather than `parent.` for them: `parent` is now `screen`
+    //  - If this replaces the Type98T dial, delete the Type98TDisplay { } block above
+    // =====================================================================
+
+
+
+
+    // =====================================================================
+    //  PASTE YOUR SCREEN QML ABOVE THIS LINE
+    // =====================================================================
+    }   // end of `screen`
+
+
+    GridBackground {
+        anchors.fill: parent
+        z: -1
+        opacity: root.settings_on_off ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 500 } }
+        visible: opacity > 0
+        backColor:   "#06100c"   // gap colour, top
+        backColor2:  "#030806"   // gap colour bottom, fog and vignette
+        tileColor:    Qt.rgba(root.red/255, root.green/255, root.blue/255, 1)   // tile, lower half of its gradient
+        tileColor2:  Qt.rgba(root.red/255, root.green/255, root.blue/255, .2)   // tile, upper half
+        edgeColor:   "#dddddd"   // rim light on the tile edges
+        accentColor: "#ffd400"   // the odd glowing tile
+        tilt: .7
+    }
+}
