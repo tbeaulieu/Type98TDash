@@ -110,6 +110,11 @@ Item {
 
     property bool changing_page: rpmtest.changing_pagedata
 
+    property int oiltempshow: 1           // 0 = hide the oil temp readout
+    property int oilpressureshow: 1       // 0 = hide the oil pressure readout
+    // Oil temp High is Celsius; 0 = no warning
+    readonly property bool oiltempOk: oiltemphigh === 0 || oiltemp < oiltemphigh
+
     // Set by Type98T.qml (same hooks as the AgeSolo template)
     property string settingsFocus: ""   // key of the setting being edited, "" when the menu is closed
     property string userColor: ""       // Red/Green/Blue from the settings menu
@@ -369,7 +374,7 @@ Item {
             y: 186
             z: 3
             color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oiltemphigh === 0 || root.oiltemp < root.oiltemphigh)false; else true
+            visible: root.oiltempshow === 1 && !root.oiltempOk
             opacity: oil_temp_animate.running ? 0 : 1
             
         }
@@ -384,18 +389,15 @@ Item {
             x: 668
             y: 186
             z: 3
-            color: if (root.oiltemp < root.oiltemphigh)
+            color: if (root.oiltempOk)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            visible: if(root.oiltemphigh === 0)false; else true
+            visible: root.oiltempshow === 1
             opacity: oil_temp_animate.running ? 0 : 1
             Timer{
                 id: oil_temp_animate
-                running: if (root.oiltemp > root.oiltemphigh)
-                            true
-                        else
-                            false
+                running: root.oiltemphigh !== 0 && root.oiltemp > root.oiltemphigh
                 interval: 500
                 repeat: true
                 onTriggered: if(parent.opacity === 0){
@@ -411,7 +413,7 @@ Item {
             x: 778
             y: 194
             z: 4
-            color: if (root.oiltemp < root.oiltemphigh)
+            color: if (root.oiltempOk)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
@@ -422,7 +424,7 @@ Item {
             transform: Rotation{
                 angle: 90
             }
-            visible: if(root.oiltemphigh === 0)false; else true
+            visible: root.oiltempshow === 1
 
         }
          Text {
@@ -440,7 +442,7 @@ Item {
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oilpressurehigh === 0 || root.oilpressure.toFixed(0) < root.oilpressurelow)false; else true
+            visible: root.oilpressureshow === 1 && !(root.oilpressure.toFixed(0) < root.oilpressurelow)
             }
         Text {
             id: oilpressure_display_val_blink
@@ -457,7 +459,7 @@ Item {
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: if(root.oilpressurehigh !== 0 && root.oilpressure.toFixed(0) < root.oilpressurelow)true; else false
+            visible: root.oilpressureshow === 1 && root.oilpressure.toFixed(0) < root.oilpressurelow
             opacity: oil_pressure_animate.running ? 0 : 1
             Timer{
                 id: oil_pressure_animate
@@ -492,7 +494,7 @@ Item {
             transform: Rotation{
                 angle: 90
             }
-            visible: if(root.oilpressurehigh === 0)false; else true
+            visible: root.oilpressureshow === 1
 
         }
         Text {
@@ -852,8 +854,8 @@ Item {
         var k = root.settingsFocus
         if (k === "speedunits") return 0
         if (k === "waterunits" || k === "waterhigh" || k === "waterlow") return 1
-        if (k === "oiltempunits" || k === "oiltemphigh") return 2
-        if (k === "oilpressurehigh" || k === "oilpressurelow") return 3
+        if (k === "oiltempshow" || k === "oiltempunits" || k === "oiltemphigh") return 2
+        if (k === "oilpressureshow" || k === "oilpressurelow") return 3
         if (k === "fuellow") return 4
         return -1
     }

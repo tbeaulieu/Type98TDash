@@ -61,11 +61,12 @@ Item {
             { key: "fuellow",        label: "Low",   type: "number", min: 0, step: 1 } ] },
 
         { name: "Oil temp", rows: [
+            { key: "oiltempshow",    label: "Show",  type: "enum",   options: ["OFF", "ON"] },
             { key: "oiltempunits",   label: "Units", type: "enum",   options: ["F", "C"] },
             { key: "oiltemphigh",    label: "High",  type: "number", min: 0, step: 1 } ] },
 
         { name: "Oil press", rows: [
-            { key: "oilpressurehigh",  label: "High",  type: "number", min: 0, step: 1 },
+            { key: "oilpressureshow",  label: "Show",  type: "enum",   options: ["OFF", "ON"] },
             { key: "oilpressurelow",   label: "Low",   type: "number", min: 0, step: 1 } ] },
 
         { name: "Save & Exit", action: true, glyph: '○', rows: [] }
