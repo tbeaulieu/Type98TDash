@@ -49,9 +49,10 @@ Item {
             { key: "blue",           label: "Blue",        type: "number", min: 0, max: 255, step: 1, wrap: true } ] },
 
         { name: "Drive", rows: [
-            { key: "speedunits",     label: "Speed units", type: "enum",   options: ["KMH", "MPH", "BOTH"] },
+            { key: "speedunits",     label: "Speed units", type: "enum",   options: ["KMH", "MPH"] },
             { key: "rpmlimit",       label: "Rpm limit",   type: "number", min: 0, max: 9000, step: 100, wrap: true } ] },
 
+        // High / Low are in the units chosen for that readout (changing Units converts them). High of 0 = no warning; Low is the warm-up threshold.
         { name: "Coolant", rows: [
             { key: "waterunits",     label: "Units", type: "enum",   options: ["F", "C"] },
             { key: "waterhigh",      label: "High",  type: "number", min: 0, step: 1 },
@@ -67,7 +68,18 @@ Item {
 
         { name: "Oil press", rows: [
             { key: "oilpressureshow",  label: "Show",  type: "enum",   options: ["OFF", "ON"] },
-            { key: "oilpressurelow",   label: "Low",   type: "number", min: 0, step: 1 } ] },
+            { key: "oilpressureunits", label: "Units", type: "enum",   options: ["PSI", "BAR"] },
+            { key: "oilpressurelow",   label: "Low",   type: "number", min: 0, step: 1 } ] },   // always bar, 0 = no warning
+
+        // High / Low are always AFR (lambda x 14.7), 0 = no warning
+        { name: "AFR", rows: [
+            { key: "afrshow",        label: "Show",  type: "enum",   options: ["OFF", "ON"] },
+            { key: "afrunits",       label: "Units", type: "enum",   options: ["LAMBDA", "AFR"] },
+            { key: "afrhigh",        label: "High",  type: "number", min: 0, max: 25, step: 0.1, decimals: 1 },
+            { key: "afrlow",         label: "Low",   type: "number", min: 0, max: 25, step: 0.1, decimals: 1 } ] },
+
+        { name: "MAF", rows: [
+            { key: "mafshow",        label: "Show",  type: "enum",   options: ["OFF", "ON"] } ] },
 
         { name: "Save & Exit", action: true, glyph: '○', rows: [] }
     ]
@@ -264,8 +276,6 @@ Item {
                     menu.height - th.footH - 8 - height)
         Behavior on y { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
 
-        // opacity: !menu.open ? 0 : (menu.level === 1 ? 1.0 : 0.2)
-        Behavior on opacity { NumberAnimation { duration: 160 } }
         Rectangle {                                 // solid backing: nothing shows through
             x: -6; y: -6
             width: fly.width + 12
