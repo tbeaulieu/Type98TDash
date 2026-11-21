@@ -18,11 +18,11 @@ Item{
     property bool udp_down:udp_message&0x02
     property bool udp_left:udp_message&0x04
     property bool udp_right:udp_message&0x08
-    property int odometer:if(speedunits==0)rpmtest.odometer0data;else rpmtest.odometer0data*0.62
-    property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.62
+    property int odometer:if(speedunits==0)rpmtest.odometer0data;else rpmtest.odometer0data*0.621371
+    property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.621371
     property real rpm:rpmtest.rpmdata
     property real speed:rpmtest.speeddata
-    property int speedunits:1
+    property int speedunits:1             // 0 = KMH, 1 = MPH
     property real watertemp:rpmtest.watertempdata
     property real fuel:rpmtest.fueldata
     property real o2:rpmtest.o2data
@@ -50,9 +50,12 @@ Item{
     property real batteryhigh:0
     property real batteryunits:0
 
-    property real afrlow:0
-    property real afrhigh:0
-    property real afrunits:0
+    // Wideband. o2data arrives as lambda; the limits are always in AFR (lambda x 14.7).
+    property real afrlow:0                // 0 = no rich warning
+    property real afrhigh:0               // 0 = no lean warning
+    property int afrunits:1               // 0 = show lambda, 1 = show AFR
+    property int afrshow:1                // 0 = hide the wideband readout
+    property int mafshow:1                // 0 = hide the MAF readout
 
     // Defaults for a fresh install (no JSON and no old .txt to migrate)
     property int waterlow:80
@@ -123,6 +126,8 @@ Item{
         { key: "oiltempshow" },    { key: "oiltemphigh" },     { key: "oiltempunits" },
         { key: "oilpressureshow" },{ key: "oilpressurelow" },
         { key: "speedunits" },     { key: "rpmlimit" },
+        { key: "afrshow" },        { key: "afrunits" },        { key: "afrhigh" },        { key: "afrlow" },
+        { key: "mafshow" },
         // the Type98T dial has nothing that uses these
         { key: "fuelhigh",         disabled: true },
         { key: "fuelunits",        disabled: true },
@@ -133,9 +138,7 @@ Item{
         { key: "night_time_hue",   disabled: true },
         { key: "rpmdamping",       disabled: true },
         { key: "batterylow",       disabled: true },
-        { key: "batteryhigh",      disabled: true },
-        { key: "afrlow",           disabled: true },
-        { key: "afrhigh",          disabled: true }
+        { key: "batteryhigh",      disabled: true }
     ]
 
     // What the menu should list and what gets persisted
@@ -190,6 +193,7 @@ Item{
                     var k = editableSettings[i].key
                     if (obj.hasOwnProperty(k)) applyConfigValue(k, obj[k])
                 }
+                if (root.speedunits !== 0) root.speedunits = 1     // no "both" mode on this dial
                 return "json"
             } catch (e) {
                 console.log("config JSON invalid, keeping defaults and NOT overwriting: " + e)
@@ -199,8 +203,12 @@ Item{
         var old = readLines(config_file, 26)
         if (old.length === 0) old = readLines(config_file_v4, 26)
         if (old.length > 0) {
-            for (var j = 0; j < old.length && j < legacyKeys.length; j++)
-                if (legacyKeys[j]) applyConfigValue(legacyKeys[j], old[j])
+            for (var j = 0; j < old.length && j < legacyKeys.length; j++) {
+                var lk = legacyKeys[j]
+                // The old AFR High / Low never acted as limits on this dash, so they are not imported
+                if (lk && lk !== "afrhigh" && lk !== "afrlow") applyConfigValue(lk, old[j])
+            }
+            if (root.speedunits !== 0) root.speedunits = 1     // no "both" mode on this dial
             // The old dash showed oil temp / oil pressure when their High was above zero.
             // Carry that over to the new Show settings.
             var oth = Number(old[legacyKeys.indexOf("oiltemphigh")])
@@ -347,6 +355,11 @@ Item{
         fuellow:root.fuellow
         fuelunits: root.fuelunits
         o2: root.o2
+        afrlow: root.afrlow
+        afrhigh: root.afrhigh
+        afrunits: root.afrunits
+        afrshow: root.afrshow
+        mafshow: root.mafshow
         map: root.map
         maf: root.maf
         oilpressure: root.oilpressure
