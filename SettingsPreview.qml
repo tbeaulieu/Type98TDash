@@ -35,6 +35,8 @@ Item {
         property real batterylow: 11.5
         property real afrhigh: 16.0
         property real afrlow: 11.0
+        property int oiltempshow: 1
+        property int oilpressureshow: 1
     }
 
     property bool settingsOn: true

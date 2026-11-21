@@ -65,9 +65,13 @@ Item{
     property int oiltemphigh:130
     property int oiltempunits:1
     property int oilpressurelow:1         // bar (the sender value is in bar)
-    property int oilpressurehigh:10       // 0 hides the oil pressure readout
+    property int oilpressurehigh:0
     property int oilpressureunits:0
     property real night_time_hue:0
+
+    // Optional readouts
+    property int oiltempshow:1            // 0 = hide the oil temp readout
+    property int oilpressureshow:1        // 0 = hide the oil pressure readout
 
     property bool settings_on_off:false
     property bool menu_on_off:rpmtest.settings_on_offdata&0x02
@@ -116,14 +120,15 @@ Item{
         { key: "red" },  { key: "green" },  { key: "blue" },
         { key: "waterlow" },       { key: "waterhigh" },       { key: "waterunits" },
         { key: "fuellow" },
-        { key: "oiltemphigh" },    { key: "oiltempunits" },
-        { key: "oilpressurelow" }, { key: "oilpressurehigh" },
+        { key: "oiltempshow" },    { key: "oiltemphigh" },     { key: "oiltempunits" },
+        { key: "oilpressureshow" },{ key: "oilpressurelow" },
         { key: "speedunits" },     { key: "rpmlimit" },
         // the Type98T dial has nothing that uses these
         { key: "fuelhigh",         disabled: true },
         { key: "fuelunits",        disabled: true },
         { key: "oiltemplow",       disabled: true },
         { key: "oilpressureunits", disabled: true },
+        { key: "oilpressurehigh",  disabled: true },
         { key: "shiftvalue",       disabled: true },
         { key: "night_time_hue",   disabled: true },
         { key: "rpmdamping",       disabled: true },
@@ -196,6 +201,12 @@ Item{
         if (old.length > 0) {
             for (var j = 0; j < old.length && j < legacyKeys.length; j++)
                 if (legacyKeys[j]) applyConfigValue(legacyKeys[j], old[j])
+            // The old dash showed oil temp / oil pressure when their High was above zero.
+            // Carry that over to the new Show settings.
+            var oth = Number(old[legacyKeys.indexOf("oiltemphigh")])
+            var oph = Number(old[legacyKeys.indexOf("oilpressurehigh")])
+            root.oiltempshow     = (!isNaN(oth) && oth !== 0) ? 1 : 0
+            root.oilpressureshow = (!isNaN(oph) && oph !== 0) ? 1 : 0
             return "legacy"
         }
         return "none"
@@ -346,6 +357,8 @@ Item{
         oiltemphigh:root.oiltemphigh
         oiltemplow: root.oiltemplow
         oiltempunits: root.oiltempunits
+        oiltempshow: root.oiltempshow
+        oilpressureshow: root.oilpressureshow
         batteryvoltage: root.batteryvoltage
         userColor: Qt.rgba(root.red/255, root.green/255, root.blue/255, 1)
         gearpos: root.gearpos
