@@ -121,6 +121,9 @@ Item {
     property int oilpressureshow: 1       // 0 = hide the oil pressure readout
     // Oil temp High is Celsius; 0 = no warning
     readonly property bool oiltempOk: oiltemphigh === 0 || oiltemp < oiltemphigh
+    // Oil pressure: the sender value is bar. Low is always bar; 0 = no warning.
+    readonly property bool oilpressureLow: oilpressurelow !== 0 && oilpressure < oilpressurelow
+    readonly property string oilpressureText: oilpressureunits === 1 ? oilpressure.toFixed(1) : (oilpressure * 14.5038).toFixed(0)
     // Coolant: Low is the warm-up threshold, High the warning (both Celsius); a High of 0 = no warning
     readonly property bool waterHot: waterhigh !== 0 && watertemp >= waterhigh
     readonly property string water_color: watertemp < waterlow ? engine_warmup_color
@@ -428,15 +431,15 @@ Item {
             x: 668
             y: 262
             z: 3
-            text: root.oilpressure.toFixed(0) 
+            text: root.oilpressureText
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
+            color: if (root.oilpressureLow)
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: root.oilpressureshow === 1 && !(root.oilpressure.toFixed(0) < root.oilpressurelow)
+            visible: root.oilpressureshow === 1 && !root.oilpressureLow
             }
         Text {
             id: oilpressure_display_val_blink
@@ -445,22 +448,19 @@ Item {
             x: 668
             y: 262
             z: 3
-            text: root.oilpressure.toFixed(0) 
+            text: root.oilpressureText
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
+            color: if (root.oilpressureLow)
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: root.oilpressureshow === 1 && root.oilpressure.toFixed(0) < root.oilpressurelow
+            visible: root.oilpressureshow === 1 && root.oilpressureLow
             opacity: oil_pressure_animate.running ? 0 : 1
             Timer{
                 id: oil_pressure_animate
-                running: if(root.oilpressure.toFixed(0) <= root.oilpressurelow)
-                            true
-                        else
-                            false
+                running: root.oilpressureLow
                 interval: 500
                 repeat: true
                 onTriggered: if(parent.opacity === 0){
@@ -477,11 +477,11 @@ Item {
             x: 778
             y: 260
             z: 4
-            color: if (root.oilpressure.toFixed(0) > root.oilpressurelow)
+            color: if (!root.oilpressureLow)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: "OIL PRS"
+            text: root.oilpressureunits === 1 ? "OIL BAR" : "OIL PSI"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -864,7 +864,7 @@ Item {
         if (k === "speedunits") return 0
         if (k === "waterunits" || k === "waterhigh" || k === "waterlow") return 1
         if (k === "oiltempshow" || k === "oiltempunits" || k === "oiltemphigh") return 2
-        if (k === "oilpressureshow" || k === "oilpressurelow") return 3
+        if (k === "oilpressureshow" || k === "oilpressureunits" || k === "oilpressurelow") return 3
         if (k === "fuellow") return 4
         if (k === "mafshow") return 5
         if (k === "afrshow" || k === "afrunits" || k === "afrhigh" || k === "afrlow") return 6

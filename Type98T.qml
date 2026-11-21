@@ -69,7 +69,7 @@ Item{
     property int oiltempunits:1
     property int oilpressurelow:1         // bar (the sender value is in bar)
     property int oilpressurehigh:0
-    property int oilpressureunits:0
+    property int oilpressureunits:1       // 0 = PSI, 1 = BAR (what this dash always showed)
     property real night_time_hue:0
 
     // Optional readouts
@@ -124,7 +124,7 @@ Item{
         { key: "waterlow" },       { key: "waterhigh" },       { key: "waterunits" },
         { key: "fuellow" },
         { key: "oiltempshow" },    { key: "oiltemphigh" },     { key: "oiltempunits" },
-        { key: "oilpressureshow" },{ key: "oilpressurelow" },
+        { key: "oilpressureshow" },{ key: "oilpressurelow" },   { key: "oilpressureunits" },
         { key: "speedunits" },     { key: "rpmlimit" },
         { key: "afrshow" },        { key: "afrunits" },        { key: "afrhigh" },        { key: "afrlow" },
         { key: "mafshow" },
@@ -132,7 +132,6 @@ Item{
         { key: "fuelhigh",         disabled: true },
         { key: "fuelunits",        disabled: true },
         { key: "oiltemplow",       disabled: true },
-        { key: "oilpressureunits", disabled: true },
         { key: "oilpressurehigh",  disabled: true },
         { key: "shiftvalue",       disabled: true },
         { key: "night_time_hue",   disabled: true },
@@ -242,8 +241,9 @@ Item{
         if (old.length > 0) {
             for (var j = 0; j < old.length && j < legacyKeys.length; j++) {
                 var lk = legacyKeys[j]
-                // The old AFR High / Low never acted as limits on this dash, so they are not imported
-                if (lk && lk !== "afrhigh" && lk !== "afrlow") applyConfigValue(lk, old[j])
+                // The old AFR High / Low never acted as limits on this dash, and its oil pressure
+                // Units did nothing (it always showed bar), so they are not imported
+                if (lk && lk !== "afrhigh" && lk !== "afrlow" && lk !== "oilpressureunits") applyConfigValue(lk, old[j])
             }
             if (root.speedunits !== 0) root.speedunits = 1     // no "both" mode on this dial
             // The old dash showed oil temp / oil pressure when their High was above zero.

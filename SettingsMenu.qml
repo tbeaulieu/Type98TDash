@@ -68,7 +68,8 @@ Item {
 
         { name: "Oil press", rows: [
             { key: "oilpressureshow",  label: "Show",  type: "enum",   options: ["OFF", "ON"] },
-            { key: "oilpressurelow",   label: "Low",   type: "number", min: 0, step: 1 } ] },
+            { key: "oilpressureunits", label: "Units", type: "enum",   options: ["PSI", "BAR"] },
+            { key: "oilpressurelow",   label: "Low",   type: "number", min: 0, step: 1 } ] },   // always bar, 0 = no warning
 
         // High / Low are always AFR (lambda x 14.7), 0 = no warning
         { name: "AFR", rows: [
