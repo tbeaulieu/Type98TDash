@@ -18,11 +18,11 @@ Item{
     property bool udp_down:udp_message&0x02
     property bool udp_left:udp_message&0x04
     property bool udp_right:udp_message&0x08
-    property int odometer:if(speedunits==0)rpmtest.odometer0data;else rpmtest.odometer0data*0.62
-    property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.62
+    property int odometer:if(speedunits==0)rpmtest.odometer0data;else rpmtest.odometer0data*0.621371
+    property int tripmeter:if(speedunits==0)rpmtest.tripmileage0data;else rpmtest.tripmileage0data*0.621371
     property real rpm:rpmtest.rpmdata
     property real speed:rpmtest.speeddata
-    property int speedunits:1
+    property int speedunits:1             // 0 = KMH, 1 = MPH
     property real watertemp:rpmtest.watertempdata
     property real fuel:rpmtest.fueldata
     property real o2:rpmtest.o2data
@@ -50,9 +50,12 @@ Item{
     property real batteryhigh:0
     property real batteryunits:0
 
-    property real afrlow:0
-    property real afrhigh:0
-    property real afrunits:0
+    // Wideband. o2data arrives as lambda; the limits are always in AFR (lambda x 14.7).
+    property real afrlow:0                // 0 = no rich warning
+    property real afrhigh:0               // 0 = no lean warning
+    property int afrunits:1               // 0 = show lambda, 1 = show AFR
+    property int afrshow:1                // 0 = hide the wideband readout
+    property int mafshow:1                // 0 = hide the MAF readout
 
     // Defaults for a fresh install (no JSON and no old .txt to migrate)
     property int waterlow:80
@@ -66,7 +69,7 @@ Item{
     property int oiltempunits:1
     property int oilpressurelow:1         // bar (the sender value is in bar)
     property int oilpressurehigh:0
-    property int oilpressureunits:0
+    property int oilpressureunits:1       // 0 = PSI, 1 = BAR (what this dash always showed)
     property real night_time_hue:0
 
     // Optional readouts
@@ -121,21 +124,20 @@ Item{
         { key: "waterlow" },       { key: "waterhigh" },       { key: "waterunits" },
         { key: "fuellow" },
         { key: "oiltempshow" },    { key: "oiltemphigh" },     { key: "oiltempunits" },
-        { key: "oilpressureshow" },{ key: "oilpressurelow" },
+        { key: "oilpressureshow" },{ key: "oilpressurelow" },   { key: "oilpressureunits" },
         { key: "speedunits" },     { key: "rpmlimit" },
+        { key: "afrshow" },        { key: "afrunits" },        { key: "afrhigh" },        { key: "afrlow" },
+        { key: "mafshow" },
         // the Type98T dial has nothing that uses these
         { key: "fuelhigh",         disabled: true },
         { key: "fuelunits",        disabled: true },
         { key: "oiltemplow",       disabled: true },
-        { key: "oilpressureunits", disabled: true },
         { key: "oilpressurehigh",  disabled: true },
         { key: "shiftvalue",       disabled: true },
         { key: "night_time_hue",   disabled: true },
         { key: "rpmdamping",       disabled: true },
         { key: "batterylow",       disabled: true },
-        { key: "batteryhigh",      disabled: true },
-        { key: "afrlow",           disabled: true },
-        { key: "afrhigh",          disabled: true }
+        { key: "batteryhigh",      disabled: true }
     ]
 
     // What the menu should list and what gets persisted
@@ -180,8 +182,44 @@ Item{
         else if (!isNaN(Number(v))) root[key] = Number(v)
     }
 
-    // returns "json", "legacy", "none" or "error"
+    // Temperature limits are kept in whatever units their readout shows (C or F).
+    // Switching Units in the menu converts the limit so it stays the same temperature
+    // (105 C <-> 221 F). The dial works in Celsius, so it is handed the Celsius equivalents below.
+    property bool configLoading: false
+    function c2f(c) { return Math.round(c * 9 / 5 + 32) }
+    function f2c(f) { return Math.round((f - 32) * 5 / 9) }
+    function toC(v, isF) { return (v === 0 || !isF) ? v : (v - 32) * 5 / 9 }   // 0 = no warning, stays 0
+    readonly property real waterhighC: toC(waterhigh, waterunits !== 1)
+    readonly property real waterlowC: toC(waterlow, waterunits !== 1)
+    readonly property real oiltemphighC: toC(oiltemphigh, oiltempunits !== 1)
+    onWaterunitsChanged: {
+        if (configLoading) return
+        if (waterhigh !== 0) waterhigh = (waterunits === 1) ? f2c(waterhigh) : c2f(waterhigh)
+        if (waterlow !== 0) waterlow = (waterunits === 1) ? f2c(waterlow) : c2f(waterlow)
+    }
+    onOiltempunitsChanged: {
+        if (configLoading) return
+        if (oiltemphigh !== 0) oiltemphigh = (oiltempunits === 1) ? f2c(oiltemphigh) : c2f(oiltemphigh)
+    }
+
+    // Limits saved before this change, and limits in an old .txt, are Celsius. Express them
+    // in F when that is the unit. A value above 160 can only be Fahrenheit already.
+    function upgradeLimit(v, isF) { return (v === 0 || !isF || v > 160) ? v : c2f(v) }
+    function fixLimits() {
+        root.waterhigh = upgradeLimit(root.waterhigh, root.waterunits !== 1)
+        root.waterlow = upgradeLimit(root.waterlow, root.waterunits !== 1)
+        root.oiltemphigh = upgradeLimit(root.oiltemphigh, root.oiltempunits !== 1)
+    }
+
+    // returns "json", "json-upgraded", "legacy", "none" or "error"
     function loadConfig() {
+        configLoading = true
+        var r = loadConfigFiles()
+        configLoading = false
+        return r
+    }
+
+    function loadConfigFiles() {
         var lines = readLines(config_json, 300)
         if (lines.length > 0) {
             try {
@@ -190,6 +228,8 @@ Item{
                     var k = editableSettings[i].key
                     if (obj.hasOwnProperty(k)) applyConfigValue(k, obj[k])
                 }
+                if (root.speedunits !== 0) root.speedunits = 1     // no "both" mode on this dial
+                if (!obj.hasOwnProperty("limitsFollowUnits")) { fixLimits(); return "json-upgraded" }
                 return "json"
             } catch (e) {
                 console.log("config JSON invalid, keeping defaults and NOT overwriting: " + e)
@@ -199,14 +239,20 @@ Item{
         var old = readLines(config_file, 26)
         if (old.length === 0) old = readLines(config_file_v4, 26)
         if (old.length > 0) {
-            for (var j = 0; j < old.length && j < legacyKeys.length; j++)
-                if (legacyKeys[j]) applyConfigValue(legacyKeys[j], old[j])
+            for (var j = 0; j < old.length && j < legacyKeys.length; j++) {
+                var lk = legacyKeys[j]
+                // The old AFR High / Low never acted as limits on this dash, and its oil pressure
+                // Units did nothing (it always showed bar), so they are not imported
+                if (lk && lk !== "afrhigh" && lk !== "afrlow" && lk !== "oilpressureunits") applyConfigValue(lk, old[j])
+            }
+            if (root.speedunits !== 0) root.speedunits = 1     // no "both" mode on this dial
             // The old dash showed oil temp / oil pressure when their High was above zero.
             // Carry that over to the new Show settings.
             var oth = Number(old[legacyKeys.indexOf("oiltemphigh")])
             var oph = Number(old[legacyKeys.indexOf("oilpressurehigh")])
             root.oiltempshow     = (!isNaN(oth) && oth !== 0) ? 1 : 0
             root.oilpressureshow = (!isNaN(oph) && oph !== 0) ? 1 : 0
+            fixLimits()
             return "legacy"
         }
         return "none"
@@ -216,6 +262,7 @@ Item{
         var obj = {}
         for (var i = 0; i < editableSettings.length; i++)
             obj[editableSettings[i].key] = root[editableSettings[i].key]
+        obj.limitsFollowUnits = 1          // temperature limits are stored in their displayed units
         try {
             config_json.open()
             config_json.writetoopenfile(JSON.stringify(obj, null, 2) + "\n")   // single write
@@ -226,7 +273,7 @@ Item{
     Component.onCompleted: {
         try { rpmtest.DISABLE_WARNING_OVERLAY = "YES_WARNINGS_HANDLED_LOCALLY" } catch (e) {}
         var r = loadConfig()
-        if (r === "legacy" || r === "none") save_settings()   // migrate / seed defaults
+        if (r === "legacy" || r === "none" || r === "json-upgraded") save_settings()   // migrate / seed defaults
     }
 
     ///////////////////////////////
@@ -339,14 +386,19 @@ Item{
         speed:root.speed
         speedunits: root.speedunits
         watertemp:root.watertemp
-        waterhigh:root.waterhigh
-        waterlow:root.waterlow
+        waterhigh:root.waterhighC      // Celsius equivalent
+        waterlow:root.waterlowC      // Celsius equivalent
         waterunits: root.waterunits
         fuel:root.fuel
         fuelhigh:root.fuelhigh
         fuellow:root.fuellow
         fuelunits: root.fuelunits
         o2: root.o2
+        afrlow: root.afrlow
+        afrhigh: root.afrhigh
+        afrunits: root.afrunits
+        afrshow: root.afrshow
+        mafshow: root.mafshow
         map: root.map
         maf: root.maf
         oilpressure: root.oilpressure
@@ -354,7 +406,7 @@ Item{
         oilpressurelow:root.oilpressurelow
         oilpressureunits: root.oilpressureunits
         oiltemp: root.oiltemp
-        oiltemphigh:root.oiltemphigh
+        oiltemphigh:root.oiltemphighC      // Celsius equivalent
         oiltemplow: root.oiltemplow
         oiltempunits: root.oiltempunits
         oiltempshow: root.oiltempshow

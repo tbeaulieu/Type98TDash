@@ -61,7 +61,7 @@ Item {
     property bool right_joystick: inputs & 0x40000000 || root.udp_right
 
     property int odometer: rpmtest.odometer0data/10 //Overridden by Type98T.qml: km or miles to match speedunits, div by 10 to get 6 digits
-    property int tripmeter: rpmtest.tripmileage0data*0.62
+    property int tripmeter: rpmtest.tripmileage0data*0.621371
     property real value: 0
     property real shiftvalue: 0
 
@@ -82,7 +82,14 @@ Item {
     property real fuelunits
     property real fueldamping
 
-    property real o2: rpmtest.o2data
+    property real o2: rpmtest.o2data      // lambda
+    property real afrlow: 0               // AFR, 0 = no rich warning
+    property real afrhigh: 0              // AFR, 0 = no lean warning
+    property int afrunits: 1              // 0 = show lambda, 1 = show AFR
+    property int afrshow: 1               // 0 = hide the wideband readout
+    property int mafshow: 1               // 0 = hide the MAF readout
+    readonly property real afr: o2 * 14.7
+    readonly property bool afrWarn: afrshow === 1 && ((afrhigh > 0 && afr > afrhigh) || (afrlow > 0 && afr < afrlow))
     property real map: rpmtest.mapdata
     property real maf: rpmtest.mafdata
 
@@ -98,7 +105,7 @@ Item {
 
     property real batteryvoltage: rpmtest.batteryvoltagedata
 
-    property int mph: (speed * 0.62)
+    property int mph: Math.round(speed * 0.621371)
 
     property int gearpos: rpmtest.geardata
 
@@ -114,6 +121,14 @@ Item {
     property int oilpressureshow: 1       // 0 = hide the oil pressure readout
     // Oil temp High is Celsius; 0 = no warning
     readonly property bool oiltempOk: oiltemphigh === 0 || oiltemp < oiltemphigh
+    // Oil pressure: the sender value is bar. Low is always bar; 0 = no warning.
+    readonly property bool oilpressureLow: oilpressurelow !== 0 && oilpressure < oilpressurelow
+    readonly property string oilpressureText: oilpressureunits === 1 ? oilpressure.toFixed(1) : (oilpressure * 14.5038).toFixed(0)
+    // Coolant: Low is the warm-up threshold, High the warning (both Celsius); a High of 0 = no warning
+    readonly property bool waterHot: waterhigh !== 0 && watertemp >= waterhigh
+    readonly property string water_color: watertemp < waterlow ? engine_warmup_color
+                                        : waterHot ? warning_red
+                                        : (!sidelight ? primary_color : night_light_color)
 
     // Set by Type98T.qml (same hooks as the AgeSolo template)
     property string settingsFocus: ""   // key of the setting being edited, "" when the menu is closed
@@ -299,13 +314,8 @@ Item {
             y: 110
             z: 3
             
-            color: if (root.watertemp < root.waterlow)
-                        root.engine_warmup_color
-                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                else
-                    root.warning_red
-            visible: if(root.watertemp < root.waterhigh) true; else false
+            color: root.water_color
+            visible: !root.waterHot
         }
         Text {
             id: watertemp_display_val_blink
@@ -319,18 +329,10 @@ Item {
             y: 110
             z: 3
             opacity: water_temp_animate.running ? 0 : 1
-            color: if (root.watertemp < root.waterlow)
-                        root.engine_warmup_color
-                    else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                    if(!root.sidelight) root.primary_color; else root.night_light_color
-                else
-                    root.warning_red
+            color: root.water_color
             Timer{
                 id: water_temp_animate
-                running: if (root.watertemp > root.waterhigh)
-                            true
-                        else
-                            false
+                running: root.waterHot
                 interval: 500
                 repeat: true
                 onTriggered: if(parent.opacity === 0){
@@ -340,19 +342,14 @@ Item {
                     parent.opacity = 0
                 } 
             }
-            visible: if(root.watertemp < root.waterhigh) false; else true
+            visible: root.waterHot
         }
          Text {
             id: watertemp_label
             x: 778
             y: 106
             z: 4
-            color: if (root.watertemp < root.waterlow)
-                    root.engine_warmup_color
-                else if (root.watertemp > root.waterlow && root.watertemp < root.waterhigh)
-                   if(!root.sidelight) root.primary_color; else root.night_light_color
-               else
-                   root.warning_red
+            color: root.water_color
             text: if(root.waterunits !== 1) "WATER F"; else "WATER C"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
@@ -434,15 +431,15 @@ Item {
             x: 668
             y: 262
             z: 3
-            text: root.oilpressure.toFixed(0) 
+            text: root.oilpressureText
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
+            color: if (root.oilpressureLow)
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: root.oilpressureshow === 1 && !(root.oilpressure.toFixed(0) < root.oilpressurelow)
+            visible: root.oilpressureshow === 1 && !root.oilpressureLow
             }
         Text {
             id: oilpressure_display_val_blink
@@ -451,22 +448,19 @@ Item {
             x: 668
             y: 262
             z: 3
-            text: root.oilpressure.toFixed(0) 
+            text: root.oilpressureText
             font.pixelSize: 48
             font.family: ledCalculator.name
             horizontalAlignment: Text.AlignRight
-            color: if (root.oilpressure.toFixed(0) < root.oilpressurelow)
+            color: if (root.oilpressureLow)
                         root.warning_red
                     else
                         if(!root.sidelight) root.primary_color; else root.night_light_color
-            visible: root.oilpressureshow === 1 && root.oilpressure.toFixed(0) < root.oilpressurelow
+            visible: root.oilpressureshow === 1 && root.oilpressureLow
             opacity: oil_pressure_animate.running ? 0 : 1
             Timer{
                 id: oil_pressure_animate
-                running: if(root.oilpressure.toFixed(0) <= root.oilpressurelow)
-                            true
-                        else
-                            false
+                running: root.oilpressureLow
                 interval: 500
                 repeat: true
                 onTriggered: if(parent.opacity === 0){
@@ -483,11 +477,11 @@ Item {
             x: 778
             y: 260
             z: 4
-            color: if (root.oilpressure.toFixed(0) > root.oilpressurelow)
+            color: if (!root.oilpressureLow)
                    if(!root.sidelight) root.primary_color; else root.night_light_color
                else
                    root.warning_red
-            text: "OIL PRS"
+            text: root.oilpressureunits === 1 ? "OIL BAR" : "OIL PSI"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -588,24 +582,28 @@ Item {
             source: if(!root.sidelight) "./img/left_column.png"; else "./img/left_column_lit.png"
         }
 
-        //For those of us who don't run a wideband or AIT temp probe comment out the below.
+        // MAF and wideband readouts (hide either with its Show row in the settings menu).
+        // The upper one was labelled "AIT C" but has always printed rpmtest.mafdata, so it is
+        // labelled MAF now.
 
         Text{
             x: 38;y:91; z:3
+            visible: root.mafshow === 1
             color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: root.maf.toFixed(0)                   //Need to figure out value here?
+            text: root.maf.toFixed(0)
             font.pixelSize: 48
             horizontalAlignment: Text.AlignRight
             width: 86
             font.family: ledCalculator.name
         }
         Text {
-            id: ait_label
+            id: maf_label
+            visible: root.mafshow === 1
             x: 148
-            y: 98
+            y: 104
             z: 4
             color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "AIT C"
+            text: "MAF"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -615,9 +613,19 @@ Item {
         }
 
         Text{
+            id: wideband_display_val
             x: 38;y:158; z:3
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: root.o2.toFixed(2)
+            visible: root.afrshow === 1
+            // lambda in, shown as AFR (x 14.7) or lambda; red and flashing outside the AFR limits
+            color: if(root.afrWarn) root.warning_red; else if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: root.afrunits === 1 ? root.afr.toFixed(1) : root.o2.toFixed(2)
+            Timer{
+                running: root.afrWarn
+                interval: 500
+                repeat: true
+                onTriggered: parent.opacity = (parent.opacity === 0 ? 1 : 0)
+                onRunningChanged: if(!running) parent.opacity = 1
+            }
             font.pixelSize: 38
             horizontalAlignment: Text.AlignRight
             width: 86
@@ -625,11 +633,12 @@ Item {
         }
         Text {
             id: wideband_label
+            visible: root.afrshow === 1
             x: 148
             y: 157
             z: 4
-            color: if(!root.sidelight) root.primary_color; else root.night_light_color
-            text: "O2 VLT"
+            color: if(root.afrWarn) root.warning_red; else if(!root.sidelight) root.primary_color; else root.night_light_color
+            text: root.afrunits === 1 ? "AFR" : "LAMBDA"
             font.pixelSize: 14
             horizontalAlignment: Text.AlignHCenter
             font.family: bdoGrotesk.name
@@ -637,7 +646,7 @@ Item {
                 angle: 90
             }
         }
-        //End AIT/Wideband info
+        //End MAF/wideband info
         
         Image {
             id: dimLight1
@@ -855,8 +864,10 @@ Item {
         if (k === "speedunits") return 0
         if (k === "waterunits" || k === "waterhigh" || k === "waterlow") return 1
         if (k === "oiltempshow" || k === "oiltempunits" || k === "oiltemphigh") return 2
-        if (k === "oilpressureshow" || k === "oilpressurelow") return 3
+        if (k === "oilpressureshow" || k === "oilpressureunits" || k === "oilpressurelow") return 3
         if (k === "fuellow") return 4
+        if (k === "mafshow") return 5
+        if (k === "afrshow" || k === "afrunits" || k === "afrhigh" || k === "afrlow") return 6
         return -1
     }
     readonly property bool focusRedline: root.settingsFocus === "rpmlimit"
@@ -873,17 +884,26 @@ Item {
 
     Rectangle {
         id: settings_focus_box
-        // top edge of each LCD cell on the right column, plus the bottom of the last one
-        readonly property var cellEdges: [29, 100, 174, 249, 325, 400]
+        // x, y, width, height of each LCD cell: speed, coolant, oil temp, oil pressure, fuel
+        // on the right column, then MAF and wideband on the left one
+        readonly property var cells: [
+            [656,  31, 120, 67],
+            [656, 102, 120, 70],
+            [656, 176, 120, 71],
+            [656, 251, 120, 72],
+            [656, 327, 120, 71],
+            [ 27,  82, 118, 62],
+            [ 27, 148, 118, 62]
+        ]
         property int cell: 0
         Connections {
             target: root
             onFocusCellChanged: if (root.focusCell >= 0) settings_focus_box.cell = root.focusCell   // keep the last cell while fading out
         }
-        x: 656
-        width: 120
-        y: cellEdges[cell] + 2
-        height: cellEdges[cell + 1] - cellEdges[cell] - 4
+        x: cells[cell][0]
+        y: cells[cell][1]
+        width: cells[cell][2]
+        height: cells[cell][3]
         z: 6
         color: "transparent"
         radius: 6
